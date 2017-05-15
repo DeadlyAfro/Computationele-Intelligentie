@@ -65,6 +65,11 @@ namespace CI_practical1
             //and set nextBox to the correct value
 
         }
+        static void sortSuccessors()
+        {
+            //TODO:
+            //create a sorted list of boxes in the order they should be expanded with expand method 3.
+        }
         static int[,] createSudoku()  
         {
             sudokuSize = 9; //standard sudokusize
