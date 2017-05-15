@@ -73,5 +73,11 @@ namespace CI_practical1
             //read sudoku from file and create an array representation of the puzzle
             return sudoku;
         }
+        static void updateRunTimeData()
+        {
+            //TODO:
+            //Implement timer
+            //count amount of recursive calls
+        }
     }
 }
