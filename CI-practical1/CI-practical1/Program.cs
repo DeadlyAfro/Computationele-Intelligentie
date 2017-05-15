@@ -31,7 +31,7 @@ namespace CI_practical1
                     return t;
                 else
                 {
-                    Expand();
+                    Expand(t);
                     int[][,]successors = legalMoves(t, nextBox.Item1, nextBox.Item2);
                     for(int i = 0; i< successors.Count(); i++)
                     {
@@ -58,7 +58,7 @@ namespace CI_practical1
             //calculate the possible successors, and return them in an array
             return successors.ToArray();
         }
-        static void Expand()
+        static void Expand(int[,] t)
         {
             //TODO:
             //select the next box to expand (according to expand method)
