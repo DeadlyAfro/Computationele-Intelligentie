@@ -1,0 +1,6 @@
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\bin\Debug\CI-practical1.exe.config
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\bin\Debug\CI-practical1.exe
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\bin\Debug\CI-practical1.pdb
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\obj\Debug\CI-practical1.csprojResolveAssemblyReference.cache
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\obj\Debug\CI-practical1.exe
+C:\Users\ian\Documents\Gametech docs\CI\CI-practical1\CI-practical1\obj\Debug\CI-practical1.pdb
