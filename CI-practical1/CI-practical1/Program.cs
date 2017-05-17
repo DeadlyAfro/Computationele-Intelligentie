@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CI_practical1
@@ -12,6 +13,8 @@ namespace CI_practical1
         private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
 
         private static List<(int x, int y)> ExpansionPriority;
+
+        private static string sudokuPath = "sudoku.txt";
 
         public static void Main(string[] args)
         {
@@ -166,10 +169,34 @@ namespace CI_practical1
 
         private static int[,] createSudoku()
         {
-            sudokuSize = 9; //standard sudokusize
+            var lines = new List<string>();
+            using (StreamReader reader = new StreamReader(sudokuPath))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    lines.Add(line);
+                }
+            }
+
+            sudokuSize = lines.Count; //standard sudokusize
+
+            if (!sudokuSize.IsPerfect() || sudokuSize != lines[0].Split(' ').Length)
+            {
+                throw new Exception("Invalid sudoku file.");
+            }
+
             var sudoku = new int[sudokuSize, sudokuSize];
-            //TODO:  
-            //read sudoku from file and create an array representation of the puzzle
+
+            for (var i = 0; i < sudokuSize; i++)
+            {
+                var line = lines[i].Split(' ').Select(int.Parse).ToList();
+
+                for (int j = 0; j < sudokuSize; j++)
+                {
+                    sudoku[i, j] = line[j];
+                }
+            }
             return sudoku;
         }
 
@@ -178,6 +205,11 @@ namespace CI_practical1
             //TODO:
             //Implement timer
             //count amount of recursive calls
+        }
+
+        private static bool IsPerfect(this int n)
+        {
+            return Math.Sqrt(n) % 1 == 0;
         }
     }
 
