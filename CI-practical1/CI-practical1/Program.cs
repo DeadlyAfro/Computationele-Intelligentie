@@ -10,7 +10,6 @@ namespace CI_practical1
     {
         private static Stack<int[,]> trackStack = new Stack<int[,]>();
         private static int sudokuSize, recursiveCounter;
-        private static (int x, int y) nextBox = (0, 0);
         private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
         private static Stopwatch stopwatch;
 
@@ -51,8 +50,7 @@ namespace CI_practical1
             {
                 return t;
             }
-            Expand(t);
-            var successors = legalMoves(t, nextBox.Item1, nextBox.Item2);
+            var successors = legalMoves(t);
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
@@ -60,9 +58,13 @@ namespace CI_practical1
                     throw new Exception("empty successor");
                 L.Push(tNext);
                 t = BackTracking(L);
+                if (t != null && isGoal(t))
+                {
+                    return t;
+                }
             }
             L.Pop();
-            return t;
+            return null;
         }
 
         private static bool isGoal(int[,] t)
@@ -78,8 +80,10 @@ namespace CI_practical1
             return true;
         }
 
-        private static int[][,] legalMoves(int[,] t, int x, int y)
+        private static int[][,] legalMoves(int[,] t)
         {
+            var (x, y) = Expand(t);
+
             //calculate the possible successors, and return them in an array
             var illegalValues = new HashSet<int>();
             int[][,] successors;
@@ -122,7 +126,7 @@ namespace CI_practical1
             return successors;
         }
 
-        private static void Expand(int[,] t)
+        private static (int, int) Expand(int[,] t)
         {
             switch (expandMethod)
             {
@@ -138,8 +142,7 @@ namespace CI_practical1
                             i++;
                         }
                     }
-                    nextBox = (i, j);
-                    break;
+                    return (i, j);
                 }
                 case ExpandMethod.RightToLeft:
                 {
@@ -153,16 +156,16 @@ namespace CI_practical1
                             i--;
                         }
                     }
-                    nextBox = (i, j);
-                    break;
+                    return (i, j);
                 }
                 case ExpandMethod.Size:
                 {
                     // Expand the first empty box according to the domain sizes.
                     // This should be: nextbox = ExpansionPriority.First((x, y) => t[x, y] <= 0); buuuut LINQ isn't updated yet.
-                    nextBox = ExpansionPriority.First(xy => t[xy.x, xy.y] <= 0);
-                    break;
+                    return ExpansionPriority.First(xy => t[xy.x, xy.y] <= 0);
                 }
+                default:
+                    throw new Exception();
             }
         }
 
