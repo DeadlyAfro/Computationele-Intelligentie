@@ -13,7 +13,6 @@ namespace CI_practical1
         private static (int x, int y) nextBox = (0, 0);
         private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
         private static Stopwatch stopwatch;
-        private static bool timeOut = false;
 
         private static List<(int x, int y)> ExpansionPriority;
 
@@ -42,15 +41,12 @@ namespace CI_practical1
         private static int[,] BackTracking(Stack<int[,]> L)
         {
             updateRunTimeData();
-
             if (!L.Any())
             {
                 Console.WriteLine("stack is empty");
                 return null;
             }
             var t = L.First();
-            if (timeOut)
-                return t;
             if (isGoal(t))
             {
                 return t;
@@ -64,8 +60,6 @@ namespace CI_practical1
                     throw new Exception("empty successor");
                 L.Push(tNext);
                 t = BackTracking(L);
-                if (isGoal(t))
-                    return t;
             }
             L.Pop();
             return t;
@@ -119,10 +113,9 @@ namespace CI_practical1
             {                
                 if (!illegalValues.Contains(i))
                 {
-                    var nextState = t.Clone();
-                    int[,] newArray = (int[,])nextState;
-                    newArray[x, y] = i;
-                    successors[counter] = newArray;
+                    var nextState = t;
+                    nextState[x, y] = i;
+                    successors[counter] = nextState;
                     counter++;
                 }
             }
@@ -270,9 +263,9 @@ namespace CI_practical1
             
             //Implement timer
             var time = stopwatch.ElapsedMilliseconds;
-            if(time > 600000) //more than 10 minutes
+            if(time <600000) //more than 10 minutes
             {   //TODO:
-                timeOut = true;
+                //exitstrategy
             }
             //count amount of recursive calls
             recursiveCounter++;
