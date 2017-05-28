@@ -111,7 +111,7 @@ namespace CI_practical1
                     counter++;
                 }
             }
-            return successors.ToArray();
+            return successors;
         }
 
         private static void Expand(int[,] t)
