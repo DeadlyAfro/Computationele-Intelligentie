@@ -42,6 +42,8 @@ namespace CI_practical1
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
+                if(tNext == null)
+                    throw new Exception("empty successor");
                 L.Push(tNext);
                 BackTracking(L);
             }
@@ -51,16 +53,58 @@ namespace CI_practical1
 
         private static bool isGoal(int[,] t)
         {
-            //TODO:
+            var state = t;
             //check if the current puzzle state is the goal state
+            foreach (var box in t)
+            {
+                if(box != 0)
+                   continue;
+                else return false;
+            }
             return true;
         }
 
         private static int[][,] legalMoves(int[,] t, int x, int y)
         {
-            var successors = new HashSet<int[,]>();
-            //TODO:
             //calculate the possible successors, and return them in an array
+            var illegalValues = new HashSet<int>();
+            int[][,] successors;
+            //check for horizontal illegal moves
+            for (var i = 0; i < sudokuSize; i++)
+            {
+                if (t[i, y] != 0)
+                    illegalValues.Add(t[i, y]);
+            }
+            //check for vertical illegal moves
+            for (var j = 0; j < sudokuSize; j++)
+            {
+                if (t[x, j] != 0)
+                    illegalValues.Add(t[x, j]);
+            }
+            //check for illegal moves in the box's field
+            int blockSize = (int)Math.Sqrt(sudokuSize); //Setup the field to look at
+            int blockStartX =( x / blockSize) * blockSize;
+            int blockStartY = (y / blockSize) * blockSize;
+
+            //check for each value in the field
+            for (var i = blockStartX; i < blockStartX + blockSize; i++)
+                for (var j = blockStartY; j < blockStartY + blockSize; j++)
+                    if (t[i, j] != 0)
+                        illegalValues.Add(t[i, j]);
+
+            //store the new possible states in an array and return it
+            successors = new int[(sudokuSize - illegalValues.Count())][,];
+            int counter = 0;
+            for (var i = 1; i < sudokuSize+1; i++)
+            {                
+                if (!illegalValues.Contains(i))
+                {
+                    var nextState = t;
+                    nextState[x, y] = i;
+                    successors[counter] = nextState;
+                    counter++;
+                }
+            }
             return successors.ToArray();
         }
 
