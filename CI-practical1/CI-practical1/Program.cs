@@ -25,12 +25,12 @@ namespace CI_practical1
             recursiveCounter = 0;    //set runtime data
             stopwatch = new Stopwatch();
             stopwatch.Start();
-            var solution = BackTracking(trackStack); // start backtracking
-
             if (expandMethod == ExpandMethod.Size)
             {
                 ExpansionPriority = sortSuccessors(sudoku);
             }
+            var solution = BackTracking(trackStack); // start backtracking
+            
         }
 
         private static int[,] BackTracking(Stack<int[,]> L)
@@ -123,7 +123,7 @@ namespace CI_practical1
                     var (i, j) = (0, 0);
                     while (t[i, j] > 0)
                     {
-                        if (i < sudokuSize) i++;
+                        if (i < sudokuSize -1) i++;
                         else
                         {
                             i = 0;
@@ -138,7 +138,7 @@ namespace CI_practical1
                     var (i, j) = (0, 0);
                     while (t[i, j] > 0)
                     {
-                        if (j < sudokuSize) j++;
+                        if (j < sudokuSize-1) j++;
                         else
                         {
                             j = 0;
