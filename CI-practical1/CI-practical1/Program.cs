@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 
 namespace CI_practical1
 {
     public static class Program
     {
         private static Stack<int[,]> trackStack = new Stack<int[,]>();
-        private static int sudokuSize;
+        private static int sudokuSize, recursiveCounter;
         private static (int x, int y) nextBox = (0, 0);
         private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
+        private static Stopwatch stopwatch;
 
         private static List<(int x, int y)> ExpansionPriority;
 
@@ -20,7 +22,10 @@ namespace CI_practical1
         {
             var sudoku = createSudoku(); //create the sudoku,
             trackStack.Push(sudoku); //push the first state to the stack,
-            var solution = BackTracking(trackStack); //and start backtracking
+            recursiveCounter = 0;    //set runtime data
+            stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var solution = BackTracking(trackStack); // start backtracking
 
             if (expandMethod == ExpandMethod.Size)
             {
@@ -30,6 +35,7 @@ namespace CI_practical1
 
         private static int[,] BackTracking(Stack<int[,]> L)
         {
+            updateRunTimeData();
             if (!L.Any())
                 return null;
             var t = L.First();
@@ -246,9 +252,15 @@ namespace CI_practical1
 
         private static void updateRunTimeData()
         {
-            //TODO:
+            
             //Implement timer
+            var time = stopwatch.ElapsedMilliseconds;
+            if(time <600000) //more than 10 minutes
+            {   //TODO:
+                //exitstrategy
+            }
             //count amount of recursive calls
+            recursiveCounter++;
         }
 
         private static bool IsPerfect(this int n)
