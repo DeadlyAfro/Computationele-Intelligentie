@@ -10,7 +10,7 @@ namespace CI_practical1
     {
         private static Stack<int[,]> trackStack = new Stack<int[,]>();
         private static int sudokuSize, recursiveCounter;
-        private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
+        private static ExpandMethod expandMethod = ExpandMethod.Size;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
 
@@ -35,20 +35,25 @@ namespace CI_practical1
                 Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
                 Console.WriteLine(new string('-', sudokuSize * 4 - 3));
             }
+            Console.WriteLine(stopwatch.Elapsed);
+            Console.WriteLine(recursiveCounter);
             Console.ReadKey();
         }
 
         private static int[,] BackTracking(Stack<int[,]> L)
         {
-            updateRunTimeData();
+            //updateRunTimeData();
             if (!L.Any())
             {
                 Console.WriteLine("stack is empty");
                 return null;
             }
             var t = L.First();
-            if (timeOut)
-                return t;
+            //if (timeOut)
+            //{
+            //    Console.WriteLine("timeout");
+            //    return t;
+            //}
             if (isGoal(t))
             {
                 return t;
@@ -57,8 +62,6 @@ namespace CI_practical1
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
-                if(tNext == null)
-                    throw new Exception("empty successor");
                 L.Push(tNext);
                 t = BackTracking(L);
                 if (t != null && isGoal(t))
@@ -276,7 +279,6 @@ namespace CI_practical1
             }
             //count amount of recursive calls
             recursiveCounter++;
-            Console.WriteLine(recursiveCounter);
         }
 
         private static bool IsPerfect(this int n)
