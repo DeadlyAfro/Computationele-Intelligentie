@@ -283,9 +283,9 @@ namespace CI_practical1
 
             var row = new int[(int)Math.Sqrt(array.Length)];
 
-            for (int i = 0; i < rownum; i++)
+            for (int i = 0; i < (int)Math.Sqrt(array.Length); i++)
             {
-                row[i] = array[i, 0];
+                row[i] = array[rownum, i];
             }
             return row;
         }
