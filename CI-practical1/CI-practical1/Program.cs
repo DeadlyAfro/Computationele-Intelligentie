@@ -30,14 +30,17 @@ namespace CI_practical1
                 ExpansionPriority = sortSuccessors(sudoku);
             }
             var solution = BackTracking(trackStack); // start backtracking
-            
+            Console.ReadKey();
         }
 
         private static int[,] BackTracking(Stack<int[,]> L)
         {
             updateRunTimeData();
             if (!L.Any())
+            {
+                Console.WriteLine("stack is empty");
                 return null;
+            }
             var t = L.First();
             if (isGoal(t))
             {
@@ -261,6 +264,7 @@ namespace CI_practical1
             }
             //count amount of recursive calls
             recursiveCounter++;
+            Console.WriteLine(recursiveCounter);
         }
 
         private static bool IsPerfect(this int n)
