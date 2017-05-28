@@ -131,11 +131,11 @@ namespace CI_practical1
                     var (i, j) = (0, 0);
                     while (t[i, j] > 0)
                     {
-                        if (i < sudokuSize -1) i++;
+                        if (j < sudokuSize -1) j++;
                         else
                         {
-                            i = 0;
-                            j++;
+                            j = 0;
+                            i++;
                         }
                     }
                     nextBox = (i, j);
@@ -143,14 +143,14 @@ namespace CI_practical1
                 }
                 case ExpandMethod.RightToLeft:
                 {
-                    var (i, j) = (0, 0);
+                    var (i, j) = (sudokuSize-1, sudokuSize-1);
                     while (t[i, j] > 0)
                     {
-                        if (j < sudokuSize-1) j++;
+                        if (j > 0) j--;
                         else
                         {
                             j = 0;
-                            i++;
+                            i--;
                         }
                     }
                     nextBox = (i, j);
