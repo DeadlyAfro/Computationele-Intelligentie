@@ -30,6 +30,11 @@ namespace CI_practical1
                 ExpansionPriority = sortSuccessors(sudoku);
             }
             var solution = BackTracking(trackStack); // start backtracking
+            for (int i = 0; i < sudokuSize; i++)
+            {
+                Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
+                Console.WriteLine(new string('-', sudokuSize * 4));
+            }
             Console.ReadKey();
         }
 
@@ -270,6 +275,17 @@ namespace CI_practical1
         private static bool IsPerfect(this int n)
         {
             return Math.Sqrt(n) % 1 == 0;
+        }
+
+        private static int[] GetRow(this int[,] array, int rownum)
+        {
+            var row = new int[array.Length];
+
+            for (int i = 0; i < rownum; i++)
+            {
+                row[i] = array[i, 0];
+            }
+            return row;
         }
     }
 
