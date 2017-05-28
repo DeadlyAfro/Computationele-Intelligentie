@@ -33,7 +33,7 @@ namespace CI_practical1
             for (int i = 0; i < sudokuSize; i++)
             {
                 Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
-                Console.WriteLine(new string('-', sudokuSize * 4));
+                Console.WriteLine(new string('-', sudokuSize * 4 - 3));
             }
             Console.ReadKey();
         }
@@ -59,10 +59,10 @@ namespace CI_practical1
                 if(tNext == null)
                     throw new Exception("empty successor");
                 L.Push(tNext);
-                BackTracking(L);
+                t = BackTracking(L);
             }
             L.Pop();
-            return null;
+            return t;
         }
 
         private static bool isGoal(int[,] t)
@@ -279,7 +279,9 @@ namespace CI_practical1
 
         private static int[] GetRow(this int[,] array, int rownum)
         {
-            var row = new int[array.Length];
+            if (array == null) throw new ArgumentNullException();
+
+            var row = new int[(int)Math.Sqrt(array.Length)];
 
             for (int i = 0; i < rownum; i++)
             {
