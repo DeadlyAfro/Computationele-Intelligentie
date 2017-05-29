@@ -42,18 +42,18 @@ namespace CI_practical1
 
         private static int[,] BackTracking(Stack<int[,]> L)
         {
-            //updateRunTimeData();
+            updateRunTimeData();
             if (!L.Any())
             {
                 Console.WriteLine("stack is empty");
                 return null;
             }
             var t = L.First();
-            //if (timeOut)
-            //{
-            //    Console.WriteLine("timeout");
-            //    return t;
-            //}
+            if (timeOut)
+            {
+                Console.WriteLine("timeout");
+                return t;
+            }
             if (isGoal(t))
             {
                 return t;
@@ -140,7 +140,7 @@ namespace CI_practical1
                 case ExpandMethod.LeftToRight:
                 {
                     var (i, j) = (0, 0);
-                    while (t[i, j] > 0)
+                    while (t[i, j] > 0 && i < sudokuSize)
                     {
                         if (j < sudokuSize -1) j++;
                         else
@@ -154,12 +154,12 @@ namespace CI_practical1
                 case ExpandMethod.RightToLeft:
                 {
                     var (i, j) = (sudokuSize-1, sudokuSize-1);
-                    while (t[i, j] > 0)
+                    while (t[i, j] > 0 && i >= 0)
                     {
                         if (j > 0) j--;
                         else
                         {
-                            j = 0;
+                            j = sudokuSize - 1;
                             i--;
                         }
                     }
@@ -279,6 +279,7 @@ namespace CI_practical1
             }
             //count amount of recursive calls
             recursiveCounter++;
+            Console.WriteLine(recursiveCounter);
         }
 
         private static bool IsPerfect(this int n)
