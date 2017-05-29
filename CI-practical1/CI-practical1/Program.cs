@@ -279,7 +279,6 @@ namespace CI_practical1
             }
             //count amount of recursive calls
             recursiveCounter++;
-            Console.WriteLine(recursiveCounter);
         }
 
         private static bool IsPerfect(this int n)
