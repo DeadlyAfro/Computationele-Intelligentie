@@ -35,7 +35,7 @@ namespace CI_practical1
                 Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
                 Console.WriteLine(new string('-', sudokuSize * 4 - 3));
             }
-            Console.WriteLine(stopwatch.Elapsed);
+            Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
             Console.WriteLine(recursiveCounter);
             Console.ReadKey();
         }
