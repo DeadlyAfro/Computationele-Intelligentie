@@ -10,7 +10,7 @@ namespace CI_practical1
     {
         private static Stack<int[,]> trackStack = new Stack<int[,]>();
         private static int sudokuSize, recursiveCounter;
-        private static ExpandMethod expandMethod = ExpandMethod.RightToLeft;
+        private static ExpandMethod expandMethod = ExpandMethod.Size;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
 
@@ -35,7 +35,7 @@ namespace CI_practical1
                 Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
                 Console.WriteLine(new string('-', sudokuSize * 4 - 3));
             }
-            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            Console.WriteLine(stopwatch.Elapsed);
             Console.WriteLine(recursiveCounter);
             Console.ReadKey();
         }
@@ -279,6 +279,7 @@ namespace CI_practical1
             }
             //count amount of recursive calls
             recursiveCounter++;
+            Console.WriteLine(recursiveCounter);
         }
 
         private static bool IsPerfect(this int n)
