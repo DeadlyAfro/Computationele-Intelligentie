@@ -58,7 +58,9 @@ namespace CI_practical1
             {
                 return t;
             }
-            var successors = legalMoves(t);
+            var illegalMoves = legalMoves(t);
+            int[][,] successors = new int[(sudokuSize - illegalMoves.Count())][,];
+            successors = legalStates(illegalMoves, t, successors);
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
@@ -86,7 +88,7 @@ namespace CI_practical1
             return true;
         }
 
-        private static int[][,] legalMoves(int[,] t)
+        private static HashSet<int> legalMoves(int[,] t)
         {
             var (x, y) = Expand(t);
 
@@ -118,9 +120,15 @@ namespace CI_practical1
 
             //store the new possible states in an array and return it
             successors = new int[(sudokuSize - illegalValues.Count())][,];
+            
+            return illegalValues;
+        }
+        private static int[][,] legalStates(HashSet<int> illegalValues, int[,] t, int[][,] successors)
+        {
+            var (x, y) = Expand(t);
             int counter = 0;
-            for (var i = 1; i < sudokuSize+1; i++)
-            {                
+            for (var i = 1; i < sudokuSize + 1; i++)
+            {
                 if (!illegalValues.Contains(i))
                 {
                     var nextState = t.Clone();
@@ -131,6 +139,7 @@ namespace CI_practical1
                 }
             }
             return successors;
+
         }
 
         private static (int, int) Expand(int[,] t)
