@@ -10,7 +10,7 @@ namespace CI_practical1
     {
         private static Stack<int[,]> trackStack = new Stack<int[,]>();
         private static int sudokuSize, recursiveCounter;
-        private static ExpandMethod expandMethod = ExpandMethod.Size;
+        private static ExpandMethod expandMethod = ExpandMethod.LeftToRight;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
 
@@ -58,20 +58,20 @@ namespace CI_practical1
             {
                 return t;
             }
-            var illegalMoves = legalMoves(t);
-            int[][,] successors = new int[(sudokuSize - illegalMoves.Count())][,];
+            var illegalMoves = legalMoves(t);            
             var counter = 0;
             for (int i = 1; i < sudokuSize+1; i++)
             {
                 if (!illegalMoves.Contains(i))
                 {
-                    successors[counter] = legalStateSingle(t, i);
-                    var tNext = successors[counter];
+                    int[,] successors = new int[sudokuSize, sudokuSize];
+                    successors = legalStateSingle(t, i);
+                    var tNext = successors;
                     L.Push(tNext);
-                    t = BackTracking(L);
-                    if (t != null && isGoal(t))
+                    var answer = BackTracking(L);
+                    if (answer != null && isGoal(answer))
                     {
-                        return t;
+                        return answer;
                     }
                     counter++;
                 }
@@ -111,7 +111,6 @@ namespace CI_practical1
 
             //calculate the possible successors, and return them in an array
             var illegalValues = new HashSet<int>();
-            int[][,] successors;
             //check for horizontal illegal moves
             for (var i = 0; i < sudokuSize; i++)
             {
