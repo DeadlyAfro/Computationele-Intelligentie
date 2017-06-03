@@ -60,7 +60,17 @@ namespace CI_practical1
             }
             var illegalMoves = legalMoves(t);
             int[][,] successors = new int[(sudokuSize - illegalMoves.Count())][,];
-            successors = legalStates(illegalMoves, t, successors);
+            var counter = 0;
+            for (int i = 1; i < sudokuSize+1; i++)
+            {
+                if (!illegalMoves.Contains(i))
+                {
+                    successors[counter] = legalStateSingle(t, i);
+                    counter++;
+                }
+                
+            }            
+            //successors = legalStates(illegalMoves, t, successors);
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
@@ -140,6 +150,14 @@ namespace CI_practical1
             }
             return successors;
 
+        }
+        private static int[,] legalStateSingle(int[,] t, int value)
+        {
+            var (x, y) = Expand(t);
+            var nextState = t.Clone();
+            int[,] newArray = (int[,])nextState;
+            newArray[x, y] = value;
+            return newArray;
         }
 
         private static (int, int) Expand(int[,] t)
