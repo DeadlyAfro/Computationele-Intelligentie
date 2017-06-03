@@ -66,21 +66,28 @@ namespace CI_practical1
                 if (!illegalMoves.Contains(i))
                 {
                     successors[counter] = legalStateSingle(t, i);
+                    var tNext = successors[counter];
+                    L.Push(tNext);
+                    t = BackTracking(L);
+                    if (t != null && isGoal(t))
+                    {
+                        return t;
+                    }
                     counter++;
                 }
                 
             }            
             //successors = legalStates(illegalMoves, t, successors);
-            for (var i = 0; i < successors.Count(); i++)
-            {
-                var tNext = successors[i];
-                L.Push(tNext);
-                t = BackTracking(L);
-                if (t != null && isGoal(t))
-                {
-                    return t;
-                }
-            }
+            //for (var i = 0; i < successors.Count(); i++)
+            //{
+            //    var tNext = successors[i];
+            //    L.Push(tNext);
+            //    t = BackTracking(L);
+            //    if (t != null && isGoal(t))
+            //    {
+            //        return t;
+            //    }
+            //}
             L.Pop();
             return null;
         }
@@ -129,7 +136,7 @@ namespace CI_practical1
                         illegalValues.Add(t[i, j]);
 
             //store the new possible states in an array and return it
-            successors = new int[(sudokuSize - illegalValues.Count())][,];
+            //successors = new int[(sudokuSize - illegalValues.Count())][,];
             
             return illegalValues;
         }
