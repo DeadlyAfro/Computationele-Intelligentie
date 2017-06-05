@@ -8,7 +8,7 @@ namespace CI_practical1
 {
     public static class Program
     {
-        private static Stack<int[,]> trackStack = new Stack<int[,]>();
+        private static Stack<Field[,]> trackStack = new Stack<Field[,]>();
         private static int sudokuSize, recursiveCounter;
         private static ExpandMethod expandMethod = ExpandMethod.Size;
         private static Stopwatch stopwatch;
@@ -20,19 +20,17 @@ namespace CI_practical1
 
         public static void Main(string[] args)
         {
+            var field = new Field();
+
             var sudoku = createSudoku(); //create the sudoku,
             trackStack.Push(sudoku); //push the first state to the stack,
             recursiveCounter = 0;    //set runtime data
             stopwatch = new Stopwatch();
             stopwatch.Start();
-            if (expandMethod == ExpandMethod.Size)
-            {
-                ExpansionPriority = sortSuccessors(sudoku);
-            }
             var solution = BackTracking(trackStack); // start backtracking
             for (int i = 0; i < sudokuSize; i++)
             {
-                Console.WriteLine(string.Join(" | ",solution.GetRow(i)));
+                Console.WriteLine(string.Join(" | ",solution.GetRow(i).Select(x => x.Value)));
                 Console.WriteLine(new string('-', sudokuSize * 4 - 3));
             }
             Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
@@ -40,7 +38,7 @@ namespace CI_practical1
             Console.ReadKey();
         }
 
-        private static int[,] BackTracking(Stack<int[,]> L)
+        private static Field[,] BackTracking(Stack<Field[,]> L)
         {
             updateRunTimeData();
             if (!L.Any())
@@ -58,7 +56,7 @@ namespace CI_practical1
             {
                 return t;
             }
-            var successors = legalMoves(t);
+            var successors = GetSuccessors(t);
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
@@ -73,36 +71,117 @@ namespace CI_practical1
             return null;
         }
 
-        private static bool isGoal(int[,] t)
+        private static bool isGoal(Field[,] t)
         {
             var state = t;
             //check if the current puzzle state is the goal state
             foreach (var box in t)
             {
-                if(box != 0)
+                if(box.Value != 0)
                    continue;
                 else return false;
             }
             return true;
         }
 
-        private static int[][,] legalMoves(int[,] t)
+        private static Field[][,] GetSuccessors(Field[,] t)
+        {
+            var emptyfields = new List<(int x, int y)>();
+
+            for (var x = 0; x < sudokuSize; x++)
+            {
+                for (var y = 0; y < sudokuSize; y++)
+                {
+                    if (t[x, y].Value == 0)
+                    {
+                        emptyfields.Add((x, y));
+                    }
+                }
+            }
+
+            // Make this an array later?
+            var successors = new List<Field[,]>();
+
+            // Handle Fields ordered by domain size --> Most-Constrained Variable = Lowest Domain size
+            foreach (var (x, y) in emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count)) // Grr LINQ y u no tuples
+            {
+                var successor = t.DeepClone(); // Deepclone so the Domain etc also gets cloned instead of copied by ref.
+
+                successor[x, y].Value = successor[x, y].Domain.First();
+
+                if (ForwardCheck(successor, (x, y))) successors.Add(successor);
+            }
+
+            return successors.ToArray();
+        }
+
+        // Returns false if it makes any domain empty.
+        private static bool ForwardCheck(Field[,] t, (int x, int y) c)
+        {
+            var newval = t[c.x, c.y].Value;
+
+            // Row
+            for (int i = 0; i < sudokuSize; i++)
+            {
+                if (i == c.y) continue;
+
+                var field = t[c.x, i];
+
+                field.Domain.Remove(newval);
+
+                if (!field.Domain.Any()) return false;
+            }
+
+            // Column
+            for (int i = 0; i < sudokuSize; i++)
+            {
+                if (i == c.x) continue;
+
+                var field = t[i, c.y];
+
+                field.Domain.Remove(newval);
+
+                if (!field.Domain.Any()) return false;
+            }
+
+            // Block
+            var blockSize = (int)Math.Sqrt(sudokuSize);
+            var blockStartX = blockSize * (c.x / blockSize);
+            var blockStartY = blockSize * (c.y / blockSize);
+            for (int i = blockStartX; i < blockStartX + blockSize; i++)
+            {
+                for (int j = blockStartY; j < blockStartY + blockSize; j++)
+                {
+                    if (i == c.x && j == c.y) continue;
+
+                    var field = t[i, j];
+
+                    field.Domain.Remove(newval);
+
+                    if (!field.Domain.Any()) return false;
+                }
+            }
+
+            return true;
+        }
+
+        /*private static Field[][,] legalMoves(Field[,] t)
         {
             var (x, y) = Expand(t);
 
             //calculate the possible successors, and return them in an array
-            var illegalValues = new HashSet<int>();
-            int[][,] successors;
+            var illegalValues = new HashSet<Field>();
+            Field[][,] successors;
             //check for horizontal illegal moves
             for (var i = 0; i < sudokuSize; i++)
             {
-                if (t[i, y] != 0)
+                if (t[i, y].Value != 0)
                     illegalValues.Add(t[i, y]);
             }
             //check for vertical illegal moves
             for (var j = 0; j < sudokuSize; j++)
             {
-                if (t[x, j] != 0)
+                if (t[x, j].Value != 0)
                     illegalValues.Add(t[x, j]);
             }
             //check for illegal moves in the box's field
@@ -131,9 +210,9 @@ namespace CI_practical1
                 }
             }
             return successors;
-        }
+        }*/
 
-        private static (int, int) Expand(int[,] t)
+        /*private static (int, int) Expand(int[,] t)
         {
             switch (expandMethod)
             {
@@ -174,10 +253,10 @@ namespace CI_practical1
                 default:
                     throw new Exception();
             }
-        }
+        }*/
 
         // Create a sorted list of boxes in the order they should be expanded with expand method 3.
-        private static List<(int x, int y)> sortSuccessors(int[,] sudoku)
+        /*private static List<(int x, int y)> sortSuccessors(int[,] sudoku)
         {
             ExpansionPriority = new List<(int x, int y)>();
 
@@ -233,9 +312,9 @@ namespace CI_practical1
                 }
             }
             return expansionDict.Keys.OrderByDescending(key => expansionDict[key]).ToList();
-        }
+        }*/
 
-        private static int[,] createSudoku()
+        private static Field[,] createSudoku()
         {
             var lines = new List<string>();
             using (StreamReader reader = new StreamReader(sudokuPath))
@@ -254,7 +333,7 @@ namespace CI_practical1
                 throw new Exception("Invalid sudoku file.");
             }
 
-            var sudoku = new int[sudokuSize, sudokuSize];
+            var sudoku = new Field[sudokuSize, sudokuSize];
 
             for (var i = 0; i < sudokuSize; i++)
             {
@@ -262,15 +341,26 @@ namespace CI_practical1
 
                 for (int j = 0; j < sudokuSize; j++)
                 {
-                    sudoku[i, j] = line[j];
+                    sudoku[i, j] = new Field(line[j]);
                 }
             }
+
+            // Fix domains:
+
+            for (var i = 0; i < sudokuSize; i++)
+            {
+                for (int j = 0; j < sudokuSize; j++)
+                {
+                    if (!ForwardCheck(sudoku, (i, j))) throw new FormatException();
+                }
+            }
+
+
             return sudoku;
         }
 
         private static void updateRunTimeData()
         {
-
             //Implement timer
             var time = stopwatch.ElapsedMilliseconds;
             if (time > 600000) //more than 10 minutes
@@ -286,11 +376,11 @@ namespace CI_practical1
             return Math.Sqrt(n) % 1 == 0;
         }
 
-        private static int[] GetRow(this int[,] array, int rownum)
+        private static T[] GetRow<T>(this T[,] array, int rownum)
         {
             if (array == null) throw new ArgumentNullException();
 
-            var row = new int[(int)Math.Sqrt(array.Length)];
+            var row = new T[(int)Math .Sqrt(array.Length)];
 
             for (int i = 0; i < (int)Math.Sqrt(array.Length); i++)
             {
@@ -298,10 +388,42 @@ namespace CI_practical1
             }
             return row;
         }
+
+        private static Field[,] DeepClone(this Field[,] arr)
+        {
+            var newarr = new Field[arr.GetLength(0), arr.GetLength(1)];
+
+            for (var i = 0; i < arr.GetLength(0); i++)
+            {
+                for (var j = 0; j < arr.GetLength(1); j++)
+                {
+                    newarr[i,j] = arr[i,j].Clone();
+                }
+            }
+
+            return newarr;
+        }
     }
 
     public enum ExpandMethod
     {
         LeftToRight, RightToLeft, Size
+    }
+
+    public class Field
+    {
+        public int Value = 0;
+        public List<int> Domain;
+
+        public Field(int val = 0)
+        {
+            this.Value = val;
+            this.Domain = Enumerable.Range(1, 9).ToList();
+        }
+
+        public Field Clone()
+        {
+            return new Field(){Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
+        }
     }
 }
