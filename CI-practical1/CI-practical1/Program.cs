@@ -20,7 +20,7 @@ namespace CI_practical1
 
         public static void Main(string[] args)
         {
-            var field = new Field();
+            var field = new Field(sudokuSize);
 
             var sudoku = createSudoku(); //create the sudoku,
             trackStack.Push(sudoku); //push the first state to the stack,
@@ -165,155 +165,6 @@ namespace CI_practical1
             return true;
         }
 
-        /*private static Field[][,] legalMoves(Field[,] t)
-        {
-            var (x, y) = Expand(t);
-
-            //calculate the possible successors, and return them in an array
-            var illegalValues = new HashSet<Field>();
-            Field[][,] successors;
-            //check for horizontal illegal moves
-            for (var i = 0; i < sudokuSize; i++)
-            {
-                if (t[i, y].Value != 0)
-                    illegalValues.Add(t[i, y]);
-            }
-            //check for vertical illegal moves
-            for (var j = 0; j < sudokuSize; j++)
-            {
-                if (t[x, j].Value != 0)
-                    illegalValues.Add(t[x, j]);
-            }
-            //check for illegal moves in the box's field
-            int blockSize = (int)Math.Sqrt(sudokuSize); //Setup the field to look at
-            int blockStartX =( x / blockSize) * blockSize;
-            int blockStartY = (y / blockSize) * blockSize;
-
-            //check for each value in the field
-            for (var i = blockStartX; i < blockStartX + blockSize; i++)
-                for (var j = blockStartY; j < blockStartY + blockSize; j++)
-                    if (t[i, j] != 0)
-                        illegalValues.Add(t[i, j]);
-
-            //store the new possible states in an array and return it
-            successors = new int[(sudokuSize - illegalValues.Count())][,];
-            int counter = 0;
-            for (var i = 1; i < sudokuSize+1; i++)
-            {                
-                if (!illegalValues.Contains(i))
-                {
-                    var nextState = t.Clone();
-                    int[,] newArray = (int[,])nextState;
-                    newArray[x, y] = i;
-                    successors[counter] = newArray;
-                    counter++;
-                }
-            }
-            return successors;
-        }*/
-
-        /*private static (int, int) Expand(int[,] t)
-        {
-            switch (expandMethod)
-            {
-                case ExpandMethod.LeftToRight:
-                {
-                    var (i, j) = (0, 0);
-                    while (t[i, j] > 0 && i < sudokuSize)
-                    {
-                        if (j < sudokuSize -1) j++;
-                        else
-                        {
-                            j = 0;
-                            i++;
-                        }
-                    }
-                    return (i, j);
-                }
-                case ExpandMethod.RightToLeft:
-                {
-                    var (i, j) = (sudokuSize-1, sudokuSize-1);
-                    while (t[i, j] > 0 && i >= 0)
-                    {
-                        if (j > 0) j--;
-                        else
-                        {
-                            j = sudokuSize - 1;
-                            i--;
-                        }
-                    }
-                    return (i, j);
-                }
-                case ExpandMethod.Size:
-                {
-                    // Expand the first empty box according to the domain sizes.
-                    // This should be: nextbox = ExpansionPriority.First((x, y) => t[x, y] <= 0); buuuut LINQ isn't updated yet.
-                    return ExpansionPriority.First(xy => t[xy.x, xy.y] <= 0);
-                }
-                default:
-                    throw new Exception();
-            }
-        }*/
-
-        // Create a sorted list of boxes in the order they should be expanded with expand method 3.
-        /*private static List<(int x, int y)> sortSuccessors(int[,] sudoku)
-        {
-            ExpansionPriority = new List<(int x, int y)>();
-
-            var domainSizes = new int[sudokuSize, sudokuSize];
-
-            // Calculate how many known values there are in the same row/column/block
-            for (int i = 0; i < sudokuSize; i++)
-            {
-                for (int j = 0; j < sudokuSize; j++)
-                {
-                    // Assuming value of 0 = empty square.
-                    if (sudoku[i, j] > 0)
-                    {
-                        // Row
-                        for (int k = 0; k < sudokuSize; k++)
-                        {
-                            if (k == j) continue;
-
-                            domainSizes[i, k]++;
-                        }
-
-                        // Column
-                        for (int k = 0; k < sudokuSize; k++)
-                        {
-                            if (k == i) continue;
-
-                            domainSizes[k, j]++;
-                        }
-
-                        // Block
-                        var blockSize = (int)Math.Sqrt(sudokuSize);
-                        var blockStartX = blockSize * (i / blockSize);
-                        var blockStartY = blockSize * (j / blockSize);
-                        for (int k = blockStartX; k < blockStartX + blockSize; k++)
-                        {
-                            for (int l = blockStartY; l < blockStartY + blockSize; l++)
-                            {
-                                if (k == i && l == j) continue;
-
-                                domainSizes[k, l]++;
-                            }
-                        }
-                    }
-                }
-            }
-
-            var expansionDict = new Dictionary<(int, int), int>();  // Ghetto priority list.
-            for (int i = 0; i < sudokuSize; i++)
-            {
-                for (int j = 0; j < sudokuSize; j++)
-                {
-                    expansionDict.Add((i, j), domainSizes[i, j]);
-                }
-            }
-            return expansionDict.Keys.OrderByDescending(key => expansionDict[key]).ToList();
-        }*/
-
         private static Field[,] createSudoku()
         {
             var lines = new List<string>();
@@ -341,7 +192,7 @@ namespace CI_practical1
 
                 for (int j = 0; j < sudokuSize; j++)
                 {
-                    sudoku[i, j] = new Field(line[j]);
+                    sudoku[i, j] = new Field(sudokuSize, line[j]);
                 }
             }
 
@@ -415,15 +266,18 @@ namespace CI_practical1
         public int Value = 0;
         public List<int> Domain;
 
-        public Field(int val = 0)
+        private int size;
+
+        public Field(int size, int val = 0)
         {
+            this.size = size;
             this.Value = val;
-            this.Domain = Enumerable.Range(1, 9).ToList();
+            this.Domain = Enumerable.Range(1, size).ToList();
         }
 
         public Field Clone()
         {
-            return new Field(){Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
+            return new Field(size){Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
         }
     }
 }
