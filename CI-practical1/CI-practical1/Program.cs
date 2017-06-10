@@ -77,8 +77,8 @@ namespace CI_practical1
                     }
                 }
             }
-            foreach (var field in emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count))
-            {
+            var field = emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count).First();
+            
                 var successors = GetSuccessors(t, field);
                 for (var j = 0; j < successors.Count(); j++)
                 {
@@ -96,7 +96,7 @@ namespace CI_practical1
                         return t2;
                     }
                 }
-            }
+            
             L.Pop();
             return null;
         }
