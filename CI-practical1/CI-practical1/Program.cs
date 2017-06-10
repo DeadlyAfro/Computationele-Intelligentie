@@ -135,7 +135,7 @@ namespace CI_practical1
             // Row
             for (int i = 0; i < sudokuSize; i++)
             {
-                if (i == c.y) continue;
+                if (i == c.y || t[c.x, i].Value > 0) continue;
 
                 var field = t[c.x, i];
 
@@ -147,7 +147,7 @@ namespace CI_practical1
             // Column
             for (int i = 0; i < sudokuSize; i++)
             {
-                if (i == c.x) continue;
+                if (i == c.x || t[i, c.y].Value > 0) continue;
 
                 var field = t[i, c.y];
 
@@ -164,7 +164,7 @@ namespace CI_practical1
             {
                 for (int j = blockStartY; j < blockStartY + blockSize; j++)
                 {
-                    if (i == c.x && j == c.y) continue;
+                    if ((i == c.x && j == c.y) || t[i, j].Value > 0) continue;
 
                     var field = t[i, j];
 
@@ -254,11 +254,11 @@ namespace CI_practical1
 
         private static Field[,] DeepClone(this Field[,] arr)
         {
-            var newarr = new Field[arr.GetLength(0), arr.GetLength(1)];
+            var newarr = new Field[sudokuSize, sudokuSize];
 
-            for (var i = 0; i < arr.GetLength(0); i++)
+            for (var i = 0; i < sudokuSize; i++)
             {
-                for (var j = 0; j < arr.GetLength(1); j++)
+                for (var j = 0; j < sudokuSize; j++)
                 {
                     newarr[i,j] = arr[i,j].Clone();
                 }
@@ -306,7 +306,7 @@ namespace CI_practical1
 
         public Field Clone()
         {
-            return new Field(size){Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
+            return new Field(size) {Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
         }
     }
 }
