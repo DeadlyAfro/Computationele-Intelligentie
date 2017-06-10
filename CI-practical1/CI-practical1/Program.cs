@@ -10,13 +10,12 @@ namespace CI_practical1
     {
         private static Stack<Field[,]> trackStack = new Stack<Field[,]>();
         private static int sudokuSize, recursiveCounter;
-        private static ExpandMethod expandMethod = ExpandMethod.Size;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
 
-        private static List<(int x, int y)> ExpansionPriority;
-
         private static string sudokuPath = "sudoku.txt";
+
+        private static List<int[]> testlist = new List<int[]>();
 
         public static void Main(string[] args)
         {
@@ -28,14 +27,20 @@ namespace CI_practical1
             stopwatch = new Stopwatch();
             stopwatch.Start();
             var solution = BackTracking(trackStack); // start backtracking
-            for (int i = 0; i < sudokuSize; i++)
-            {
-                Console.WriteLine(string.Join(" | ",solution.GetRow(i).Select(x => x.Value)));
-                Console.WriteLine(new string('-', sudokuSize * 4 - 3));
-            }
+            PrintSudoku(solution);
             Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
             Console.WriteLine(recursiveCounter);
             Console.ReadKey();
+        }
+
+        private static void PrintSudoku(Field[,] sudoku)
+        {
+            Console.WriteLine("Sudoku:");
+            for (int i = 0; i < sudokuSize; i++)
+            {
+                Console.WriteLine(string.Join(" | ", sudoku.GetRow(i).Select(x => x.Value)));
+                Console.WriteLine(new string('-', sudokuSize * 4 - 3));
+            }
         }
 
         private static Field[,] BackTracking(Stack<Field[,]> L)
@@ -47,6 +52,7 @@ namespace CI_practical1
                 return null;
             }
             var t = L.First();
+            PrintSudoku(t);
             if (timeOut)
             {
                 Console.WriteLine("timeout");
@@ -60,6 +66,12 @@ namespace CI_practical1
             for (var i = 0; i < successors.Count(); i++)
             {
                 var tNext = successors[i];
+                var simple = tNext.Simplify();
+                if (testlist.Any(x => x.SequenceEqual(simple)))
+                {
+                    continue;
+                }
+                testlist.Add(simple);
                 L.Push(tNext);
                 t = BackTracking(L);
                 if (t != null && isGoal(t))
@@ -253,6 +265,23 @@ namespace CI_practical1
             }
 
             return newarr;
+        }
+
+        private static int[] Simplify(this Field[,] field)
+        {
+            if (field == null) throw new ArgumentNullException();
+
+            var intarr = new int[sudokuSize * sudokuSize];
+
+            for (var i = 0; i < sudokuSize; i++)
+            {
+                for (var j = 0; j < sudokuSize; j++)
+                {
+                    intarr[i * sudokuSize + j] = field[i, j].Value;
+                }
+            }
+
+            return intarr;
         }
     }
 
