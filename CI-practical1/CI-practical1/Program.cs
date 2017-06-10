@@ -52,7 +52,7 @@ namespace CI_practical1
                 return null;
             }
             var t = L.First();
-            PrintSudoku(t);
+            //PrintSudoku(t);
             if (timeOut)
             {
                 Console.WriteLine("timeout");
@@ -62,21 +62,39 @@ namespace CI_practical1
             {
                 return t;
             }
-            var successors = GetSuccessors(t);
-            for (var i = 0; i < successors.Count(); i++)
+
+            if (t == null) return null;
+
+            var emptyfields = new List<(int x, int y)>();
+
+            for (var x = 0; x < sudokuSize; x++)
             {
-                var tNext = successors[i];
-                var simple = tNext.Simplify();
-                if (testlist.Any(x => x.SequenceEqual(simple)))
+                for (var y = 0; y < sudokuSize; y++)
                 {
-                    continue;
+                    if (t[x, y].Value == 0)
+                    {
+                        emptyfields.Add((x, y));
+                    }
                 }
-                testlist.Add(simple);
-                L.Push(tNext);
-                t = BackTracking(L);
-                if (t != null && isGoal(t))
+            }
+            foreach (var field in emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count))
+            {
+                var successors = GetSuccessors(t, field);
+                for (var j = 0; j < successors.Count(); j++)
                 {
-                    return t;
+                    var tNext = successors[j];
+                    //var simple = tNext.Simplify();
+                    //if (testlist.Any(x => x.SequenceEqual(simple)))
+                    //{
+                    //    continue;
+                    //}
+                    //testlist.Add(simple);
+                    L.Push(tNext);
+                    var t2 = BackTracking(L);
+                    if (t2 != null && isGoal(t2))
+                    {
+                        return t2;
+                    }
                 }
             }
             L.Pop();
@@ -96,32 +114,17 @@ namespace CI_practical1
             return true;
         }
 
-        private static Field[][,] GetSuccessors(Field[,] t)
+        private static Field[][,] GetSuccessors(Field[,] t, (int x, int y) c)
         {
-            var emptyfields = new List<(int x, int y)>();
-
-            for (var x = 0; x < sudokuSize; x++)
-            {
-                for (var y = 0; y < sudokuSize; y++)
-                {
-                    if (t[x, y].Value == 0)
-                    {
-                        emptyfields.Add((x, y));
-                    }
-                }
-            }
-
-            // Make this an array later?
             var successors = new List<Field[,]>();
 
-            // Handle Fields ordered by domain size --> Most-Constrained Variable = Lowest Domain size
-            foreach (var (x, y) in emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count)) // Grr LINQ y u no tuples
+            foreach (var i in t[c.x, c.y].Domain)
             {
                 var successor = t.DeepClone(); // Deepclone so the Domain etc also gets cloned instead of copied by ref.
 
-                successor[x, y].Value = successor[x, y].Domain.First();
+                successor[c.x, c.y].Value = i;
 
-                if (ForwardCheck(successor, (x, y))) successors.Add(successor);
+                if (ForwardCheck(successor, (c.x, c.y))) successors.Add(successor);
             }
 
             return successors.ToArray();
