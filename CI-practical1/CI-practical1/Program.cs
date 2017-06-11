@@ -75,7 +75,17 @@ namespace CI_practical1
                     }
                 }
             }
-            var field = emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count).First();
+            var currentValue = SudokuSize;
+            var field = (0, 0);
+            foreach (var box in emptyfields)
+            {
+                var i = t[box.x, box.y].Domain.Count();
+                if (i < currentValue)
+                {
+                    field = box;
+                    currentValue = i;
+                }
+            }
             
             foreach (var successor in GetSuccessors(t, field))
             {
