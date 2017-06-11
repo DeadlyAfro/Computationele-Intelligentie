@@ -78,7 +78,7 @@ namespace CI_practical1
                     currentValue = i;
                 }
             }
-
+            
             foreach (var successor in GetSuccessors(t, field))
             {
                 var t2 = BackTracking(successor);
@@ -95,7 +95,7 @@ namespace CI_practical1
             //check if the current puzzle state is the goal state
             foreach (var box in t)
             {
-                if (box.Value == 0) return false;
+                if(box.Value == 0) return false;
             }
             return true;
         }
@@ -104,21 +104,33 @@ namespace CI_practical1
         {
             foreach (var i in t[c.x, c.y].Domain)
             {
-                if (ForwardCheck(t, (c.x, c.y), i))
-                {
-                    var successor = t.DeepClone(); // Deepclone so the Domain etc also gets cloned instead of copied by ref.
+                var successor = new Field[SudokuSize, SudokuSize];
 
-                    successor[c.x, c.y].Value = i;
-                    RemoveFromDomain(successor, (c.x, c.y));
+                successor[c.x, c.y] = t[c.x, c.y].Clone();
+                successor[c.x, c.y].Value = i;
+
+                if (ForwardCheck2(t, successor, (c.x, c.y)))
+                {
+                    for (int x = 0; x < SudokuSize; x++)
+                    {
+                        for (int y = 0; y < SudokuSize; y++)
+                        {
+                            if (successor[x, y] == null)
+                            {
+                                successor[x, y] = t[x, y].Clone();
+                            }
+                        }
+                    }
 
                     yield return successor;
                 }
             }
         }
 
-        private static void RemoveFromDomain(Field[,] t, (int x, int y) c)
+        // Returns false if it makes any domain empty.
+        private static bool ForwardCheck(Field[,] t, (int x, int y) c)
         {
-            var newval = t[c.x,c.y].Value;
+            var newval = t[c.x, c.y].Value;
 
             // Row
             for (int i = 0; i < SudokuSize; i++)
@@ -128,6 +140,8 @@ namespace CI_practical1
                 var field = t[c.x, i];
 
                 field.Domain.Remove(newval);
+
+                if (!field.Domain.Any()) return false;
             }
 
             // Column
@@ -138,6 +152,8 @@ namespace CI_practical1
                 var field = t[i, c.y];
 
                 field.Domain.Remove(newval);
+
+                if (!field.Domain.Any()) return false;
             }
 
             // Block
@@ -152,25 +168,28 @@ namespace CI_practical1
                     var field = t[i, j];
 
                     field.Domain.Remove(newval);
+
+                    if (!field.Domain.Any()) return false;
                 }
             }
+
+            return true;
         }
 
-
-
-        // Returns false if it makes any domain empty.
-        private static bool ForwardCheck(Field[,] t, (int x, int y) c, int value)
+        private static bool ForwardCheck2(Field[,] t, Field[,] successor, (int x, int y) c)
         {
-            var newval = value;
+            var newval = successor[c.x, c.y].Value;
 
             // Row
             for (int i = 0; i < SudokuSize; i++)
             {
                 if (i == c.y || t[c.x, i].Value > 0) continue;
 
-                var field = t[c.x, i];
+                var newfield = t[c.x, i].Clone();
+                successor[c.x, i] = newfield;
+                newfield.Domain.Remove(newval);
 
-                if (field.Domain.Count == 1 && field.Domain[0] == value) return false;
+                if (!newfield.Domain.Any()) return false;
             }
 
             // Column
@@ -178,9 +197,12 @@ namespace CI_practical1
             {
                 if (i == c.x || t[i, c.y].Value > 0) continue;
 
-                var field = t[i, c.y];
+                var newfield = t[i, c.y].Clone();
+                successor[i, c.y] = newfield;
 
-                if (field.Domain.Count < 2 && field.Domain[0] == value) return false;
+                newfield.Domain.Remove(newval);
+
+                if (!newfield.Domain.Any()) return false;
             }
 
             // Block
@@ -192,9 +214,12 @@ namespace CI_practical1
                 {
                     if ((i == c.x && j == c.y) || t[i, j].Value > 0) continue;
 
-                    var field = t[i, j];
+                    var newfield = t[i, j].Clone();
+                    successor[i, j] = newfield;
 
-                    if (field.Domain.Count < 2 && field.Domain[0] == value) return false;
+                    newfield.Domain.Remove(newval);
+
+                    if (!newfield.Domain.Any()) return false;
                 }
             }
 
@@ -239,7 +264,7 @@ namespace CI_practical1
             {
                 for (int j = 0; j < SudokuSize; j++)
                 {
-                    RemoveFromDomain(sudoku, (i, j)); //throw new FormatException();
+                    if (!ForwardCheck(sudoku, (i, j))) throw new FormatException();
                 }
             }
 
@@ -268,7 +293,7 @@ namespace CI_practical1
         {
             if (array == null) throw new ArgumentNullException();
 
-            var row = new T[(int)Math.Sqrt(array.Length)];
+            var row = new T[(int)Math .Sqrt(array.Length)];
 
             for (int i = 0; i < (int)Math.Sqrt(array.Length); i++)
             {
@@ -285,7 +310,7 @@ namespace CI_practical1
             {
                 for (var j = 0; j < SudokuSize; j++)
                 {
-                    newarr[i, j] = arr[i, j].Clone();
+                    newarr[i,j] = arr[i,j].Clone();
                 }
             }
 
