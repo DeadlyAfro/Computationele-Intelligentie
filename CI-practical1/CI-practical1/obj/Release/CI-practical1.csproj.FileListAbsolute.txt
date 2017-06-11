@@ -1,0 +1,6 @@
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\bin\Release\CI-practical1.exe.config
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\bin\Release\CI-practical1.exe
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\bin\Release\CI-practical1.pdb
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\obj\Release\CI-practical1.csprojResolveAssemblyReference.cache
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\obj\Release\CI-practical1.exe
+D:\School\Visual C# Projects\Computationele-Intelligentie\CI-practical1\CI-practical1\obj\Release\CI-practical1.pdb

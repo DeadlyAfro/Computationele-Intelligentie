@@ -27,7 +27,8 @@ namespace CI_practical1
             stopwatch = new Stopwatch();
             stopwatch.Start();
             var solution = BackTracking(trackStack); // start backtracking
-            PrintSudoku(solution);
+            if (solution != null) PrintSudoku(solution);
+            if (timeOut) Console.WriteLine("Timed out.");
             Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
             Console.WriteLine(recursiveCounter);
             Console.ReadKey();
@@ -55,7 +56,6 @@ namespace CI_practical1
             //PrintSudoku(t);
             if (timeOut)
             {
-                Console.WriteLine("timeout");
                 return t;
             }
             if (isGoal(t))
@@ -79,24 +79,16 @@ namespace CI_practical1
             }
             var field = emptyfields.OrderBy(tuple => t[tuple.x, tuple.y].Domain.Count).First();
             
-                var successors = GetSuccessors(t, field);
-                for (var j = 0; j < successors.Count(); j++)
+            foreach (var successor in GetSuccessors(t, field))
+            {
+                L.Push(successor);
+                var t2 = BackTracking(L);
+                if (t2 != null && isGoal(t2))
                 {
-                    var tNext = successors[j];
-                    //var simple = tNext.Simplify();
-                    //if (testlist.Any(x => x.SequenceEqual(simple)))
-                    //{
-                    //    continue;
-                    //}
-                    //testlist.Add(simple);
-                    L.Push(tNext);
-                    var t2 = BackTracking(L);
-                    if (t2 != null && isGoal(t2))
-                    {
-                        return t2;
-                    }
+                    return t2;
                 }
-            
+            }
+
             L.Pop();
             return null;
         }
@@ -114,20 +106,16 @@ namespace CI_practical1
             return true;
         }
 
-        private static Field[][,] GetSuccessors(Field[,] t, (int x, int y) c)
+        private static IEnumerable<Field[,]> GetSuccessors(Field[,] t, (int x, int y) c)
         {
-            var successors = new List<Field[,]>();
-
             foreach (var i in t[c.x, c.y].Domain)
             {
                 var successor = t.DeepClone(); // Deepclone so the Domain etc also gets cloned instead of copied by ref.
 
                 successor[c.x, c.y].Value = i;
 
-                if (ForwardCheck(successor, (c.x, c.y))) successors.Add(successor);
+                if (ForwardCheck(successor, (c.x, c.y))) yield return successor;
             }
-
-            return successors.ToArray();
         }
 
         // Returns false if it makes any domain empty.
