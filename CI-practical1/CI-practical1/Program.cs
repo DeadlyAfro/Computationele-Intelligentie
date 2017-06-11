@@ -9,7 +9,7 @@ namespace CI_practical1
     public static class Program
     {
         private static Stack<Field[,]> trackStack = new Stack<Field[,]>();
-        private static int sudokuSize, recursiveCounter;
+        public static int SudokuSize, recursiveCounter;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
 
@@ -19,8 +19,6 @@ namespace CI_practical1
 
         public static void Main(string[] args)
         {
-            var field = new Field(sudokuSize);
-
             var sudoku = createSudoku(); //create the sudoku,
             trackStack.Push(sudoku); //push the first state to the stack,
             recursiveCounter = 0;    //set runtime data
@@ -37,10 +35,10 @@ namespace CI_practical1
         private static void PrintSudoku(Field[,] sudoku)
         {
             Console.WriteLine("Sudoku:");
-            for (int i = 0; i < sudokuSize; i++)
+            for (int i = 0; i < SudokuSize; i++)
             {
                 Console.WriteLine(string.Join(" | ", sudoku.GetRow(i).Select(x => x.Value)));
-                Console.WriteLine(new string('-', sudokuSize * 4 - 3));
+                Console.WriteLine(new string('-', SudokuSize * 4 - 3));
             }
         }
 
@@ -67,9 +65,9 @@ namespace CI_practical1
 
             var emptyfields = new List<(int x, int y)>();
 
-            for (var x = 0; x < sudokuSize; x++)
+            for (var x = 0; x < SudokuSize; x++)
             {
-                for (var y = 0; y < sudokuSize; y++)
+                for (var y = 0; y < SudokuSize; y++)
                 {
                     if (t[x, y].Value == 0)
                     {
@@ -95,13 +93,10 @@ namespace CI_practical1
 
         private static bool isGoal(Field[,] t)
         {
-            var state = t;
             //check if the current puzzle state is the goal state
             foreach (var box in t)
             {
-                if(box.Value != 0)
-                   continue;
-                else return false;
+                if(box.Value == 0) return false;
             }
             return true;
         }
@@ -124,7 +119,7 @@ namespace CI_practical1
             var newval = t[c.x, c.y].Value;
 
             // Row
-            for (int i = 0; i < sudokuSize; i++)
+            for (int i = 0; i < SudokuSize; i++)
             {
                 if (i == c.y || t[c.x, i].Value > 0) continue;
 
@@ -136,7 +131,7 @@ namespace CI_practical1
             }
 
             // Column
-            for (int i = 0; i < sudokuSize; i++)
+            for (int i = 0; i < SudokuSize; i++)
             {
                 if (i == c.x || t[i, c.y].Value > 0) continue;
 
@@ -148,7 +143,7 @@ namespace CI_practical1
             }
 
             // Block
-            var blockSize = (int)Math.Sqrt(sudokuSize);
+            var blockSize = (int)Math.Sqrt(SudokuSize);
             var blockStartX = blockSize * (c.x / blockSize);
             var blockStartY = blockSize * (c.y / blockSize);
             for (int i = blockStartX; i < blockStartX + blockSize; i++)
@@ -180,30 +175,30 @@ namespace CI_practical1
                 }
             }
 
-            sudokuSize = lines.Count; //standard sudokusize
+            SudokuSize = lines.Count; //standard sudokusize
 
-            if (!sudokuSize.IsPerfect() || sudokuSize != lines[0].Split(' ').Length)
+            if (!SudokuSize.IsPerfect() || SudokuSize != lines[0].Split(' ').Length)
             {
                 throw new Exception("Invalid sudoku file.");
             }
 
-            var sudoku = new Field[sudokuSize, sudokuSize];
+            var sudoku = new Field[SudokuSize, SudokuSize];
 
-            for (var i = 0; i < sudokuSize; i++)
+            for (var i = 0; i < SudokuSize; i++)
             {
                 var line = lines[i].Split(' ').Select(int.Parse).ToList();
 
-                for (int j = 0; j < sudokuSize; j++)
+                for (int j = 0; j < SudokuSize; j++)
                 {
-                    sudoku[i, j] = new Field(sudokuSize, line[j]);
+                    sudoku[i, j] = new Field(line[j]);
                 }
             }
 
             // Fix domains:
 
-            for (var i = 0; i < sudokuSize; i++)
+            for (var i = 0; i < SudokuSize; i++)
             {
-                for (int j = 0; j < sudokuSize; j++)
+                for (int j = 0; j < SudokuSize; j++)
                 {
                     if (!ForwardCheck(sudoku, (i, j))) throw new FormatException();
                 }
@@ -245,11 +240,11 @@ namespace CI_practical1
 
         private static Field[,] DeepClone(this Field[,] arr)
         {
-            var newarr = new Field[sudokuSize, sudokuSize];
+            var newarr = new Field[SudokuSize, SudokuSize];
 
-            for (var i = 0; i < sudokuSize; i++)
+            for (var i = 0; i < SudokuSize; i++)
             {
-                for (var j = 0; j < sudokuSize; j++)
+                for (var j = 0; j < SudokuSize; j++)
                 {
                     newarr[i,j] = arr[i,j].Clone();
                 }
@@ -262,13 +257,13 @@ namespace CI_practical1
         {
             if (field == null) throw new ArgumentNullException();
 
-            var intarr = new int[sudokuSize * sudokuSize];
+            var intarr = new int[SudokuSize * SudokuSize];
 
-            for (var i = 0; i < sudokuSize; i++)
+            for (var i = 0; i < SudokuSize; i++)
             {
-                for (var j = 0; j < sudokuSize; j++)
+                for (var j = 0; j < SudokuSize; j++)
                 {
-                    intarr[i * sudokuSize + j] = field[i, j].Value;
+                    intarr[i * SudokuSize + j] = field[i, j].Value;
                 }
             }
 
@@ -283,21 +278,24 @@ namespace CI_practical1
 
     public class Field
     {
-        public int Value = 0;
+        public int Value;
         public List<int> Domain;
 
-        private int size;
-
-        public Field(int size, int val = 0)
+        public Field(int val)
         {
-            this.size = size;
             this.Value = val;
-            this.Domain = Enumerable.Range(1, size).ToList();
+            this.Domain = Enumerable.Range(1, Program.SudokuSize).ToList();
+        }
+
+        public Field(int val, List<int> domain)
+        {
+            this.Value = val;
+            this.Domain = domain;
         }
 
         public Field Clone()
         {
-            return new Field(size) {Value = this.Value, Domain = this.Domain.Select(x =>x).ToList()};
+            return new Field(this.Value, new List<int>(this.Domain));
         }
     }
 }
