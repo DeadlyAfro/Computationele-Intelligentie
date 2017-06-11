@@ -38,7 +38,7 @@ namespace CI_practical1
             }
         }
 
-        private static (int[,] values, List<int>[,] domains) BackTracking((int[,] values, List<int>[,] domains) t)
+        private static (int[,] values, bool[,][] domains) BackTracking((int[,] values, bool[,][] domains) t)
         {
             updateRunTimeData();
             //PrintSudoku(t);
@@ -69,7 +69,7 @@ namespace CI_practical1
             var field = (0, 0);
             foreach (var box in emptyfields)
             {
-                var i = t.domains[box.x, box.y].Count();
+                var i = t.domains[box.x, box.y].Count(x => x);
                 if (i < currentValue)
                 {
                     field = box;
@@ -98,16 +98,21 @@ namespace CI_practical1
             return true;
         }
 
-        private static IEnumerable<(int[,] values, List<int>[,] domains)> GetSuccessors((int[,] values, List<int>[,] domains) t, (int x, int y) c)
+        private static IEnumerable<(int[,] values, bool[,][] domains)> GetSuccessors((int[,] values, bool[,][] domains) t, (int x, int y) c)
         {
-            foreach (var i in t.domains[c.x, c.y])
+            for (var i = 0; i < SudokuSize; i++)
             {
-                if (ForwardCheck(t, (c.x, c.y), i))
+                // Bool false = not in domain.
+                if (!t.domains[c.x, c.y][i]) continue;
+
+                var newvalue = i + 1;
+
+                if (ForwardCheck(t, (c.x, c.y), newvalue))
                 {
                     var values = t.values.DeepClone();
                     var domains = t.domains.DeepClone();
 
-                    values[c.x, c.y] = i;
+                    values[c.x, c.y] = newvalue;
                     RemoveFromDomain((values, domains), (c.x, c.y));
 
                     yield return (values, domains);
@@ -115,16 +120,18 @@ namespace CI_practical1
             }
         }
 
-        private static void RemoveFromDomain((int[,] values, List<int>[,] domains) t, (int x, int y) c)
+        private static void RemoveFromDomain((int[,] values, bool[,][] domains) t, (int x, int y) c)
         {
             var newval = t.values[c.x,c.y];
+
+            if (newval <= 0) return;
 
             // Row
             for (int i = 0; i < SudokuSize; i++)
             {
                 if (i == c.y || t.values[c.x, i] > 0) continue;
 
-                t.domains[c.x, i].Remove(newval);
+                t.domains[c.x, i][newval - 1] = false;
             }
 
             // Column
@@ -132,7 +139,7 @@ namespace CI_practical1
             {
                 if (i == c.x || t.values[i, c.y] > 0) continue;
 
-                t.domains[i, c.y].Remove(newval);
+                t.domains[i, c.y][newval - 1] = false;
             }
 
             // Block
@@ -144,13 +151,13 @@ namespace CI_practical1
                 {
                     if ((i == c.x && j == c.y) || t.values[i, j] > 0) continue;
 
-                    t.domains[i, j].Remove(newval);
+                    t.domains[i, j][newval - 1] = false;
                 }
             }
         }
 
         // Returns false if it makes any domain empty.
-        private static bool ForwardCheck((int[,] values, List<int>[,] domains) t, (int x, int y) c, int value)
+        private static bool ForwardCheck((int[,] values, bool[,][] domains) t, (int x, int y) c, int value)
         {
             var newval = value;
 
@@ -159,7 +166,7 @@ namespace CI_practical1
             {
                 if (i == c.y || t.values[c.x, i] > 0) continue;
 
-                if (t.domains[c.x, i].Count == 1 && t.domains[c.x, i][0] == value) return false;
+                if (t.domains[c.x, i].Count(x => x) < 2 && t.domains[c.x, i][value - 1]) return false;
             }
 
             // Column
@@ -167,7 +174,7 @@ namespace CI_practical1
             {
                 if (i == c.x || t.values[i, c.y] > 0) continue;
 
-                if (t.domains[i, c.y].Count < 2 && t.domains[i, c.y][0] == value) return false;
+                if (t.domains[i, c.y].Count(x => x) < 2 && t.domains[i, c.y][value - 1]) return false;
             }
 
             // Block
@@ -179,14 +186,14 @@ namespace CI_practical1
                 {
                     if ((i == c.x && j == c.y) || t.values[i, j] > 0) continue;
 
-                    if (t.domains[i, j].Count < 2 && t.domains[i, j][0] == value) return false;
+                    if (t.domains[i, j].Count(x => x) < 2 && t.domains[i, j][value - 1]) return false;
                 }
             }
 
             return true;
         }
 
-        private static (int[,] values, List<int>[,] domains) createSudoku()
+        private static (int[,] values, bool[,][] domains) createSudoku()
         {
             var lines = new List<string>();
             using (StreamReader reader = new StreamReader(sudokuPath))
@@ -207,7 +214,7 @@ namespace CI_practical1
             }
 
             var values = new int[SudokuSize, SudokuSize];
-            var domains = new List<int>[SudokuSize, SudokuSize];
+            var domains = new bool[SudokuSize, SudokuSize][];
 
             for (var i = 0; i < SudokuSize; i++)
             {
@@ -216,7 +223,11 @@ namespace CI_practical1
                 for (int j = 0; j < SudokuSize; j++)
                 {
                     values[i, j] = line[j];
-                    domains[i, j] = Enumerable.Range(1, SudokuSize).ToList();
+                    domains[i, j] = new bool[SudokuSize];
+                    for (var k = 0; k < domains[i, j].Length; k++)
+                    {
+                        domains[i, j][k] = true;
+                    }
                 }
             }
 
@@ -264,15 +275,16 @@ namespace CI_practical1
             return row;
         }
 
-        private static List<int>[,] DeepClone(this List<int>[,] arr)
+        private static bool[,][] DeepClone(this bool[,][] arr)
         {
-            var newarr = new List<int>[SudokuSize, SudokuSize];
+            var newarr = new bool[SudokuSize, SudokuSize][];
 
             for (var i = 0; i < SudokuSize; i++)
             {
                 for (var j = 0; j < SudokuSize; j++)
                 {
-                    newarr[i, j] = new List<int>(arr[i, j]);
+                    newarr[i,j] = new bool[SudokuSize];
+                    Array.Copy(arr[i, j], newarr[i, j], SudokuSize);
                 }
             }
 
