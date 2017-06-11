@@ -8,7 +8,6 @@ namespace CI_practical1
 {
     public static class Program
     {
-        private static Stack<Field[,]> trackStack = new Stack<Field[,]>();
         public static int SudokuSize, recursiveCounter, blockSize;
         private static Stopwatch stopwatch;
         private static bool timeOut = false;
@@ -20,11 +19,10 @@ namespace CI_practical1
         public static void Main(string[] args)
         {
             var sudoku = createSudoku(); //create the sudoku,
-            trackStack.Push(sudoku); //push the first state to the stack,
             recursiveCounter = 0;    //set runtime data
             stopwatch = new Stopwatch();
             stopwatch.Start();
-            var solution = BackTracking(trackStack); // start backtracking
+            var solution = BackTracking(sudoku); // start backtracking
             if (solution != null) PrintSudoku(solution);
             if (timeOut) Console.WriteLine("Timed out.");
             Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
@@ -42,15 +40,9 @@ namespace CI_practical1
             }
         }
 
-        private static Field[,] BackTracking(Stack<Field[,]> L)
+        private static Field[,] BackTracking(Field[,] t)
         {
             updateRunTimeData();
-            if (!L.Any())
-            {
-                Console.WriteLine("stack is empty");
-                return null;
-            }
-            var t = L.First();
             //PrintSudoku(t);
             if (timeOut)
             {
@@ -89,15 +81,12 @@ namespace CI_practical1
 
             foreach (var successor in GetSuccessors(t, field))
             {
-                L.Push(successor);
-                var t2 = BackTracking(L);
+                var t2 = BackTracking(successor);
                 if (t2 != null && isGoal(t2))
                 {
                     return t2;
                 }
             }
-
-            L.Pop();
             return null;
         }
 
