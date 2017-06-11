@@ -14,8 +14,6 @@ namespace CI_practical1
 
         private static string sudokuPath = "sudoku.txt";
 
-        private static List<int[]> testlist = new List<int[]>();
-
         public static void Main(string[] args)
         {
             var sudoku = createSudoku(); //create the sudoku,
@@ -23,24 +21,24 @@ namespace CI_practical1
             stopwatch = new Stopwatch();
             stopwatch.Start();
             var solution = BackTracking(sudoku); // start backtracking
-            if (solution != null) PrintSudoku(solution);
+            if (solution.values != null && solution.domains != null) PrintSudoku(solution.values);
             if (timeOut) Console.WriteLine("Timed out.");
             Console.WriteLine(stopwatch.ElapsedMilliseconds + " milliseconds.");
             Console.WriteLine(recursiveCounter);
             Console.ReadKey();
         }
 
-        private static void PrintSudoku(Field[,] sudoku)
+        private static void PrintSudoku(int[,] sudoku)
         {
             Console.WriteLine("Sudoku:");
             for (int i = 0; i < SudokuSize; i++)
             {
-                Console.WriteLine(string.Join(" | ", sudoku.GetRow(i).Select(x => x.Value)));
+                Console.WriteLine(string.Join(" | ", sudoku.GetRow(i)));
                 Console.WriteLine(new string('-', SudokuSize * 4 - 3));
             }
         }
 
-        private static Field[,] BackTracking(Field[,] t)
+        private static (int[,] values, List<int>[,] domains) BackTracking((int[,] values, List<int>[,] domains) t)
         {
             updateRunTimeData();
             //PrintSudoku(t);
@@ -48,12 +46,12 @@ namespace CI_practical1
             {
                 return t;
             }
-            if (isGoal(t))
+            if (isGoal(t.values))
             {
                 return t;
             }
 
-            if (t == null) return null;
+            if (t.values == null || t.domains == null) return (null, null);
 
             var emptyfields = new List<(int x, int y)>();
 
@@ -61,7 +59,7 @@ namespace CI_practical1
             {
                 for (var y = 0; y < SudokuSize; y++)
                 {
-                    if (t[x, y].Value == 0)
+                    if (t.values[x, y] == 0)
                     {
                         emptyfields.Add((x, y));
                     }
@@ -71,7 +69,7 @@ namespace CI_practical1
             var field = (0, 0);
             foreach (var box in emptyfields)
             {
-                var i = t[box.x, box.y].Domain.Count();
+                var i = t.domains[box.x, box.y].Count();
                 if (i < currentValue)
                 {
                     field = box;
@@ -82,62 +80,59 @@ namespace CI_practical1
             foreach (var successor in GetSuccessors(t, field))
             {
                 var t2 = BackTracking(successor);
-                if (t2 != null && isGoal(t2))
+                if (t2.values != null && t2.domains != null && isGoal(t2.values))
                 {
                     return t2;
                 }
             }
-            return null;
+            return (null, null);
         }
 
-        private static bool isGoal(Field[,] t)
+        private static bool isGoal(int[,] t)
         {
             //check if the current puzzle state is the goal state
             foreach (var box in t)
             {
-                if (box.Value == 0) return false;
+                if (box == 0) return false;
             }
             return true;
         }
 
-        private static IEnumerable<Field[,]> GetSuccessors(Field[,] t, (int x, int y) c)
+        private static IEnumerable<(int[,] values, List<int>[,] domains)> GetSuccessors((int[,] values, List<int>[,] domains) t, (int x, int y) c)
         {
-            foreach (var i in t[c.x, c.y].Domain)
+            foreach (var i in t.domains[c.x, c.y])
             {
                 if (ForwardCheck(t, (c.x, c.y), i))
                 {
-                    var successor = t.DeepClone(); // Deepclone so the Domain etc also gets cloned instead of copied by ref.
+                    var values = t.values.DeepClone();
+                    var domains = t.domains.DeepClone();
 
-                    successor[c.x, c.y].Value = i;
-                    RemoveFromDomain(successor, (c.x, c.y));
+                    values[c.x, c.y] = i;
+                    RemoveFromDomain((values, domains), (c.x, c.y));
 
-                    yield return successor;
+                    yield return (values, domains);
                 }
             }
         }
 
-        private static void RemoveFromDomain(Field[,] t, (int x, int y) c)
+        private static void RemoveFromDomain((int[,] values, List<int>[,] domains) t, (int x, int y) c)
         {
-            var newval = t[c.x,c.y].Value;
+            var newval = t.values[c.x,c.y];
 
             // Row
             for (int i = 0; i < SudokuSize; i++)
             {
-                if (i == c.y || t[c.x, i].Value > 0) continue;
+                if (i == c.y || t.values[c.x, i] > 0) continue;
 
-                var field = t[c.x, i];
-
-                field.Domain.Remove(newval);
+                t.domains[c.x, i].Remove(newval);
             }
 
             // Column
             for (int i = 0; i < SudokuSize; i++)
             {
-                if (i == c.x || t[i, c.y].Value > 0) continue;
+                if (i == c.x || t.values[i, c.y] > 0) continue;
 
-                var field = t[i, c.y];
-
-                field.Domain.Remove(newval);
+                t.domains[i, c.y].Remove(newval);
             }
 
             // Block
@@ -147,40 +142,32 @@ namespace CI_practical1
             {
                 for (int j = blockStartY; j < blockStartY + blockSize; j++)
                 {
-                    if ((i == c.x && j == c.y) || t[i, j].Value > 0) continue;
+                    if ((i == c.x && j == c.y) || t.values[i, j] > 0) continue;
 
-                    var field = t[i, j];
-
-                    field.Domain.Remove(newval);
+                    t.domains[i, j].Remove(newval);
                 }
             }
         }
 
-
-
         // Returns false if it makes any domain empty.
-        private static bool ForwardCheck(Field[,] t, (int x, int y) c, int value)
+        private static bool ForwardCheck((int[,] values, List<int>[,] domains) t, (int x, int y) c, int value)
         {
             var newval = value;
 
             // Row
             for (int i = 0; i < SudokuSize; i++)
             {
-                if (i == c.y || t[c.x, i].Value > 0) continue;
+                if (i == c.y || t.values[c.x, i] > 0) continue;
 
-                var field = t[c.x, i];
-
-                if (field.Domain.Count == 1 && field.Domain[0] == value) return false;
+                if (t.domains[c.x, i].Count == 1 && t.domains[c.x, i][0] == value) return false;
             }
 
             // Column
             for (int i = 0; i < SudokuSize; i++)
             {
-                if (i == c.x || t[i, c.y].Value > 0) continue;
+                if (i == c.x || t.values[i, c.y] > 0) continue;
 
-                var field = t[i, c.y];
-
-                if (field.Domain.Count < 2 && field.Domain[0] == value) return false;
+                if (t.domains[i, c.y].Count < 2 && t.domains[i, c.y][0] == value) return false;
             }
 
             // Block
@@ -190,18 +177,16 @@ namespace CI_practical1
             {
                 for (int j = blockStartY; j < blockStartY + blockSize; j++)
                 {
-                    if ((i == c.x && j == c.y) || t[i, j].Value > 0) continue;
+                    if ((i == c.x && j == c.y) || t.values[i, j] > 0) continue;
 
-                    var field = t[i, j];
-
-                    if (field.Domain.Count < 2 && field.Domain[0] == value) return false;
+                    if (t.domains[i, j].Count < 2 && t.domains[i, j][0] == value) return false;
                 }
             }
 
             return true;
         }
 
-        private static Field[,] createSudoku()
+        private static (int[,] values, List<int>[,] domains) createSudoku()
         {
             var lines = new List<string>();
             using (StreamReader reader = new StreamReader(sudokuPath))
@@ -221,7 +206,8 @@ namespace CI_practical1
                 throw new Exception("Invalid sudoku file.");
             }
 
-            var sudoku = new Field[SudokuSize, SudokuSize];
+            var values = new int[SudokuSize, SudokuSize];
+            var domains = new List<int>[SudokuSize, SudokuSize];
 
             for (var i = 0; i < SudokuSize; i++)
             {
@@ -229,7 +215,8 @@ namespace CI_practical1
 
                 for (int j = 0; j < SudokuSize; j++)
                 {
-                    sudoku[i, j] = new Field(line[j]);
+                    values[i, j] = line[j];
+                    domains[i, j] = Enumerable.Range(1, SudokuSize).ToList();
                 }
             }
 
@@ -239,12 +226,12 @@ namespace CI_practical1
             {
                 for (int j = 0; j < SudokuSize; j++)
                 {
-                    RemoveFromDomain(sudoku, (i, j)); //throw new FormatException();
+                    RemoveFromDomain((values, domains), (i, j)); //throw new FormatException();
                 }
             }
 
 
-            return sudoku;
+            return (values, domains);
         }
 
         private static void updateRunTimeData()
@@ -277,64 +264,39 @@ namespace CI_practical1
             return row;
         }
 
-        private static Field[,] DeepClone(this Field[,] arr)
+        private static List<int>[,] DeepClone(this List<int>[,] arr)
         {
-            var newarr = new Field[SudokuSize, SudokuSize];
+            var newarr = new List<int>[SudokuSize, SudokuSize];
 
             for (var i = 0; i < SudokuSize; i++)
             {
                 for (var j = 0; j < SudokuSize; j++)
                 {
-                    newarr[i, j] = arr[i, j].Clone();
+                    newarr[i, j] = new List<int>(arr[i, j]);
                 }
             }
 
             return newarr;
         }
 
-        private static int[] Simplify(this Field[,] field)
+        private static int[,] DeepClone(this int[,] arr)
         {
-            if (field == null) throw new ArgumentNullException();
-
-            var intarr = new int[SudokuSize * SudokuSize];
+            var newarr = new int[SudokuSize, SudokuSize];
 
             for (var i = 0; i < SudokuSize; i++)
             {
                 for (var j = 0; j < SudokuSize; j++)
                 {
-                    intarr[i * SudokuSize + j] = field[i, j].Value;
+                    newarr[i, j] = arr[i, j];
                 }
             }
 
-            return intarr;
+            return newarr;
         }
     }
 
     public enum ExpandMethod
     {
         LeftToRight, RightToLeft, Size
-    }
-
-    public class Field
-    {
-        public int Value;
-        public List<int> Domain;
-
-        public Field(int val)
-        {
-            this.Value = val;
-            this.Domain = Enumerable.Range(1, Program.SudokuSize).ToList();
-        }
-
-        public Field(int val, List<int> domain)
-        {
-            this.Value = val;
-            this.Domain = domain;
-        }
-
-        public Field Clone()
-        {
-            return new Field(this.Value, new List<int>(this.Domain));
-        }
     }
 }
