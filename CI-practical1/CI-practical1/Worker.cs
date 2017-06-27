@@ -100,6 +100,7 @@ namespace CI_practical1
                 while (blacklist.Contains(blocknum)) blocknum = Random.Next(0, Program.sudokuSize);
                 result = SearchOp(sudoku, blocknum);
                 if (result < 0) blacklist.Add(blocknum);
+                if (result > 0) blacklist.Clear();
 
                 statevalue -= result;
             }
@@ -146,31 +147,55 @@ namespace CI_practical1
         {
             (int x1, int y1) = (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y + blockY * Program.blockSize);
             if (EmptySudoku[x1, y1] > 0) return int.MinValue;
-            var row1 = sudoku.GetRow(y1);
-            var col1 = sudoku.GetColumn(x1);
 
             (int x2, int y2) = (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y + blockY * Program.blockSize);
             if (EmptySudoku[x2, y2] > 0) return int.MinValue;
-            var row2 = y1 == y2 ? row1 : sudoku.GetRow(y2);
-            var col2 = x1 == x2 ? col1 : sudoku.GetColumn(x2);
 
-            var baseEval = EvaluateCell(row1, col1) + EvaluateCell(row2, col2);
+            var value1 = sudoku[x1, y1];
+            var value2 = sudoku[x2, y2];
 
-            var temp = row1[x1];
-            row1[x1] = col1[y1] = row2[x2];
-            row2[x2] = col2[y2] = temp;
+            var baseEval = 0;
+            var swapEval = 0;
 
-            var swapEval = EvaluateCell(row1, col1) + EvaluateCell(row2, col2);
+            if (y1 != y2)
+            {
+                var row1 = sudoku.GetRow(y1);
+                var row2 = sudoku.GetRow(y2);
+
+                baseEval += Domain.Count(num => !row1.Contains(num));
+                baseEval += Domain.Count(num => !row2.Contains(num));
+
+                row1[x1] = value2;
+                row2[x2] = value1;
+
+                swapEval += Domain.Count(num => !row1.Contains(num));
+                swapEval += Domain.Count(num => !row2.Contains(num));
+            }
+
+            if (x1 != x2)
+            {
+                var col1 = sudoku.GetColumn(x1);
+                var col2 = sudoku.GetColumn(x2);
+
+                baseEval += Domain.Count(num => !col1.Contains(num));
+                baseEval += Domain.Count(num => !col2.Contains(num));
+
+                col1[y1] = value2;
+                col2[y2] = value1;
+
+                swapEval += Domain.Count(num => !col1.Contains(num));
+                swapEval += Domain.Count(num => !col2.Contains(num));
+            }
             return baseEval - swapEval;
         }
 
         public int EvaluateCell(int[] row, int[] col)
         {
-            var missingInRow = Domain.Where(num => !row.Contains(num));
-            var missingInCol = Domain.Where(num => !col.Contains(num));
+            var missingInRow = Domain.Count(num => !row.Contains(num));
+            var missingInCol = Domain.Count(num => !col.Contains(num));
 
-            var rowc = missingInRow.Count();
-            var colc = missingInCol.Count();
+            var rowc = missingInRow;
+            var colc = missingInCol;
 
             return rowc + colc;
         }
@@ -181,8 +206,8 @@ namespace CI_practical1
 
             for (var i = 0; i < Program.sudokuSize; i++)
             {
-                value += Domain.Where(num => !sudoku.GetRow(i).Contains(num)).Count();
-                value += Domain.Where(num => !sudoku.GetColumn(i).Contains(num)).Count();
+                value += Domain.Count(num => !sudoku.GetRow(i).Contains(num));
+                value += Domain.Count(num => !sudoku.GetColumn(i).Contains(num));
             }
 
             return value;

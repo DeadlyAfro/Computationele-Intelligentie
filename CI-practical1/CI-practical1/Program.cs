@@ -16,7 +16,7 @@ namespace CI_practical1
         public static void Main(string[] args)
         {
             var slist = new int[] {1, 2, 3, 5};
-            var nlist = new int[] {1, 2, 3, 5};
+            var nlist = new int[] {1, 3, 5, 7};
 
             var tasks = new List<Task>();
             var i = 0;
