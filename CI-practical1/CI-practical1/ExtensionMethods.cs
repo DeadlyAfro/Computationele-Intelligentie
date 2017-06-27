@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CI_practical1
 {
@@ -14,9 +15,9 @@ namespace CI_practical1
         {
             if (array == null) throw new ArgumentNullException();
 
-            var row = new int[(int)Math.Sqrt(array.Length)];
+            var row = new int[(int) Math.Sqrt(array.Length)];
 
-            for (int i = 0; i < row.Length; i++)
+            for (var i = 0; i < row.Length; i++)
             {
                 row[i] = array[i, rownum];
             }
@@ -27,9 +28,9 @@ namespace CI_practical1
         {
             if (array == null) throw new ArgumentNullException();
 
-            var col = new int[(int)Math.Sqrt(array.Length)];
+            var col = new int[(int) Math.Sqrt(array.Length)];
 
-            for (int i = 0; i < col.Length; i++)
+            for (var i = 0; i < col.Length; i++)
             {
                 col[i] = array[colnum, i];
             }
@@ -43,7 +44,7 @@ namespace CI_practical1
 
             for (var i = 0; i < Program.blockSize; i++)
             {
-                for (int j = 0; j < Program.blockSize; j++)
+                for (var j = 0; j < Program.blockSize; j++)
                 {
                     blocks.Add((sudoku.GetBlock(i, j), (i, j)));
                 }
@@ -123,6 +124,27 @@ namespace CI_practical1
         public static (int x, int y) GetBlockCoords(this int i)
         {
             var result = (i % Program.blockSize, i / Program.blockSize);
+
+            return result;
+        }
+
+        public static T GetMax<T>(this IEnumerable<T> e, Func<T, int> f)
+        {
+            if (e == null) throw new ArgumentNullException(nameof(e));
+            var enumerable = e as T[] ?? e.ToArray();
+            if (!enumerable.Any()) throw new ArgumentException(nameof(e) + " is empty.");
+
+            var result = enumerable.First();
+            var value = f(result);
+
+            foreach (var t in enumerable)
+            {
+                if (f(t) > value)
+                {
+                    result = t;
+                    value = f(t);
+                }
+            }
 
             return result;
         }

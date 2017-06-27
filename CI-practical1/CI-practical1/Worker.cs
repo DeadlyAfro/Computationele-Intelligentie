@@ -1,46 +1,47 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Diagnostics;
 
 namespace CI_practical1
 {
     public class Worker
     {
-        private Stopwatch stopwatch;
-        private bool timeOut = false;
-        private int S;
-        private int N;
+        private int[,] emptySudoku;
+        private (int row, int col)[,] evaluation;
 
         public int ID;
 
-        private string sudokuPath = "sudokusf2.txt";
+        private readonly int N;
 
-        private int[] Domain;
         private List<(int x, int y)> Pairs;
-        private Random Random;
-        private int[,] EmptySudoku;
-        private (int row, int col)[,] Evaluation;
+
+        private readonly Random Random;
+        private readonly int S;
+        private readonly DateTime starttime;
+        private readonly Stopwatch stopwatch;
+
+        private readonly string sudokuPath = "sudokusf2.txt";
+        private bool timeOut;
 
         public Worker(int id, Random random, int s, int n)
         {
-            this.ID = id;
-            this.Random = random;
+            ID = id;
+            Random = random;
             stopwatch = new Stopwatch();
             S = s;
             N = n;
+            starttime = DateTime.UtcNow;
         }
 
         public void DoWork()
         {
-            var sudoku = createSudoku(); //create the sudoku,
+            var sudoku = createSudoku();
             Pairs = GeneratePairs();
             stopwatch.Start();
             //PrintSudoku(sudoku);
-            var solution = ILS(sudoku); // start backtracking
+            var solution = ILS(sudoku);
             //PrintSudoku(solution);
             Log(stopwatch.ElapsedMilliseconds + " milliseconds.");
         }
@@ -56,11 +57,12 @@ namespace CI_practical1
                 if (counter > N)
                 {
                     //Log("Random move time.");
-                    for (int i = 0; i < S; i++)
+                    for (var i = 0; i < S; i++)
                     {
                         SearchOp(sudoku, Random.Next(0, Program.sudokuSize), true);
                     }
                     counter = 0;
+                    statevalue = EvaluateState(sudoku);
                     //Log("New state value: " + statevalue);
                 }
 
@@ -72,15 +74,18 @@ namespace CI_practical1
                 }
 
                 statevalue = EvaluateState(sudoku);
+
                 //Log("Current state value: " + statevalue);
             }
-            if (timeOut) //Log("Final state value: " + statevalue);
-            if (statevalue == 0)
+            if (timeOut)
+            {
+                Log("Final state value: " + statevalue);
+            }
+            else
             {
                 Log("Success! The sudoku was successfully solved.");
                 Log($"The used parameters were: S={S}, N={N}");
             }
-
 
             return sudoku;
         }
@@ -89,21 +94,18 @@ namespace CI_practical1
         {
             var blacklist = new List<int>();
 
-            var blocknum = Random.Next(0, Program.sudokuSize);
-            var result = SearchOp(sudoku, blocknum);
-            if (result < 0) blacklist.Add(blocknum);
-            statevalue -= result;
+            int result;
 
-            while (result != 0 && blacklist.Count < (Program.sudokuSize - 1) && statevalue > 0)
+            do
             {
-                blocknum = Random.Next(0, Program.sudokuSize);
+                var blocknum = Random.Next(0, Program.sudokuSize);
                 while (blacklist.Contains(blocknum)) blocknum = Random.Next(0, Program.sudokuSize);
                 result = SearchOp(sudoku, blocknum);
                 if (result < 0) blacklist.Add(blocknum);
                 if (result > 0) blacklist.Clear();
 
-                statevalue -= result;
-            }
+                if (result >= 0) statevalue -= result;
+            } while (result != 0 && blacklist.Count < Program.sudokuSize - 1 && statevalue > 0);
 
             return result;
         }
@@ -129,10 +131,17 @@ namespace CI_practical1
                 return int.MinValue; // Evalute at all? 
             }
 
-            var possibleSwaps = Pairs.Select(xy => (xy, EvaluateSwap(sudoku, xy, blockX, blockY))).OrderByDescending(tuple => tuple.Item2);
-            var bestSwap = possibleSwaps.First();
+            var possibleSwaps = new List<((int x, int y), int val)>();
 
-            if (bestSwap.Item2 >= 0)
+            // No linq because slow.
+            foreach (var tuple in Pairs)
+            {
+                possibleSwaps.Add((tuple, EvaluateSwap(sudoku, tuple, blockX, blockY)));
+            }
+            // No orderby again because slow.
+            var bestSwap = possibleSwaps.GetMax(tuple => tuple.val);
+
+            if (bestSwap.val >= 0)
             {
                 Swap(ref flat[bestSwap.Item1.x], ref flat[bestSwap.Item1.y]);
                 var newblock = flat.Enflate(Program.blockSize);
@@ -141,30 +150,30 @@ namespace CI_practical1
                 //Log($"Swapped {bestSwap.Item1.x}|{flat[bestSwap.Item1.x]} and {bestSwap.Item1.y}|{flat[bestSwap.Item1.y]} in block {blockNumber} for +{bestSwap.Item2}.");
             }
             //Log("No swap today.");
-            return bestSwap.Item2;
+            return bestSwap.val;
         }
 
         public int EvaluateSwap(int[,] sudoku, (int i1, int i2) t, int blockX, int blockY)
         {
-            (int x1, int y1) = (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y + blockY * Program.blockSize);
-            if (EmptySudoku[x1, y1] > 0) return int.MinValue;
+            (int x1, int y1) =
+                (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y +
+                                                                       blockY * Program.blockSize);
+            if (emptySudoku[x1, y1] > 0) return int.MinValue;
 
-            (int x2, int y2) = (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y + blockY * Program.blockSize);
-            if (EmptySudoku[x2, y2] > 0) return int.MinValue;
+            (int x2, int y2) =
+                (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y +
+                                                                       blockY * Program.blockSize);
+            if (emptySudoku[x2, y2] > 0) return int.MinValue;
 
             var value1 = sudoku[x1, y1];
             var value2 = sudoku[x2, y2];
 
             var swapEval = 0;
-            var baseEval = 0;
 
             if (y1 != y2)
             {
                 var row1 = sudoku.GetRow(y1);
                 var row2 = sudoku.GetRow(y2);
-
-                //baseEval += Domain.Count(num => !row1.Contains(num));
-                //baseEval += Domain.Count(num => !row2.Contains(num));
 
                 row1[x1] = value2;
                 row2[x2] = value1;
@@ -178,9 +187,6 @@ namespace CI_practical1
                 var col1 = sudoku.GetColumn(x1);
                 var col2 = sudoku.GetColumn(x2);
 
-                //baseEval += Domain.Count(num => !col1.Contains(num));
-                //baseEval += Domain.Count(num => !col2.Contains(num));
-
                 col1[y1] = value2;
                 col2[y2] = value1;
 
@@ -192,26 +198,27 @@ namespace CI_practical1
 
             if (x1 != x2)
             {
-                baseEval2 += Evaluation[x2, y2].col;
-                baseEval2 += Evaluation[x1, y2].col;
+                baseEval2 += evaluation[x2, y2].col;
+                baseEval2 += evaluation[x1, y2].col;
             }
             if (y2 != y1)
             {
-                baseEval2 += Evaluation[x2, y2].row;
-                baseEval2 += Evaluation[x1, y1].row;
+                baseEval2 += evaluation[x2, y2].row;
+                baseEval2 += evaluation[x1, y1].row;
             }
 
             return baseEval2 - swapEval;
         }
 
+        // Too slow?
         public int EvaluateState(int[,] sudoku)
         {
-            int value = 0;
+            var value = 0;
 
             for (var i = 0; i < Program.sudokuSize; i++)
             {
-                value += Domain.Count(num => !sudoku.GetRow(i).Contains(num));
-                value += Domain.Count(num => !sudoku.GetColumn(i).Contains(num));
+                value += evaluation[0, i].row;
+                value += evaluation[i, 0].col;
             }
 
             return value;
@@ -220,7 +227,7 @@ namespace CI_practical1
         public void PrintSudoku(int[,] sudoku)
         {
             Log(new string('-', 32));
-            for (int i = 0; i < Program.sudokuSize; i++)
+            for (var i = 0; i < Program.sudokuSize; i++)
             {
                 Log(string.Join(" | ", sudoku.GetRow(i)));
                 Log(new string('-', Program.sudokuSize * 4 - 3));
@@ -230,25 +237,30 @@ namespace CI_practical1
 
         public void ReEvaluateCells(int[,] sudoku, (int i1, int i2) t, int blockX, int blockY)
         {
-            (int x1, int y1) = (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y + blockY * Program.blockSize);
+            (int x1, int y1) =
+                (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y +
+                                                                       blockY * Program.blockSize);
 
-            (int x2, int y2) = (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y + blockY * Program.blockSize);
+            (int x2, int y2) =
+                (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y +
+                                                                       blockY * Program.blockSize);
 
             for (var i = 0; i < Program.sudokuSize; i++)
             {
                 if (x1 != x2)
                 {
-                    Evaluation[x1, i] = GetCellValue(sudoku, x1, i);
-                    Evaluation[x2, i] = GetCellValue(sudoku, x2, i);
+                    evaluation[x1, i] = GetCellValue(sudoku, x1, i);
+                    evaluation[x2, i] = GetCellValue(sudoku, x2, i);
                 }
                 if (y1 != y2)
                 {
-                    Evaluation[i, y1] = GetCellValue(sudoku, i, y1);
-                    Evaluation[i, y2] = GetCellValue(sudoku, i, y2);
+                    evaluation[i, y1] = GetCellValue(sudoku, i, y1);
+                    evaluation[i, y2] = GetCellValue(sudoku, i, y2);
                 }
             }
         }
 
+        // TODO refactor this, no longer needed.
         public (int row, int col) GetCellValue(int[,] sudoku, int x, int y)
         {
             var rowval = GetRowValue(sudoku, y);
@@ -257,64 +269,42 @@ namespace CI_practical1
             return (rowval, colval);
         }
 
-        public int GetRowValue(int[,] sudoku, int y)
-        {
-            var missingAmount = Program.sudokuSize;
-            var seen = new List<int>();
-
-            for (var x = 0; x < Program.sudokuSize; x++)
-            {
-                var val = sudoku[x, y];
-
-                if (!seen.Contains(val))
-                {
-                    seen.Add(val);
-                    missingAmount--;
-                }
-            }
-            return missingAmount;
-        }
-
+        // (relatively) fast way to count the number of duplicates. Used to compute the EvalFunc.
         public int FastCount(int[] arr)
         {
-            var missingAmount = Program.sudokuSize;
-            var seen = new List<int>();
+            var missingAmount = 0;
+            var seen = new bool[Program.sudokuSize];
 
             for (var x = 0; x < Program.sudokuSize; x++)
             {
                 var val = arr[x];
 
-                if (!seen.Contains(val))
+                if (!seen[val - 1])
                 {
-                    seen.Add(val);
-                    missingAmount--;
+                    seen[val - 1] = true;
+                }
+                else
+                {
+                    missingAmount++;
                 }
             }
             return missingAmount;
         }
 
+        public int GetRowValue(int[,] sudoku, int y)
+        {
+            return FastCount(sudoku.GetRow(y));
+        }
+
         public int GetColumnValue(int[,] sudoku, int x)
         {
-            var missingAmount = Program.sudokuSize;
-            var seen = new List<int>();
-
-            for (var y = 0; y < Program.sudokuSize; y++)
-            {
-                var val = sudoku[x, y];
-
-                if (!seen.Contains(val))
-                {
-                    seen.Add(val);
-                    missingAmount--;
-                }
-            }
-            return missingAmount;
+            return FastCount(sudoku.GetColumn(x));
         }
 
         private int[,] createSudoku()
         {
             var lines = new List<string>();
-            using (StreamReader reader = new StreamReader(sudokuPath))
+            using (var reader = new StreamReader(sudokuPath))
             {
                 string line;
                 while ((line = reader.ReadLine()) != null)
@@ -330,12 +320,10 @@ namespace CI_practical1
                 throw new Exception("Invalid sudoku file.");
             }
 
-            Program.blockSize = (int)Math.Sqrt(Program.sudokuSize);
-
-            Domain = Enumerable.Range(1, Program.sudokuSize).ToArray();
+            Program.blockSize = (int) Math.Sqrt(Program.sudokuSize);
 
             var sudoku = new int[Program.sudokuSize, Program.sudokuSize];
-            EmptySudoku = new int[Program.sudokuSize, Program.sudokuSize];
+            emptySudoku = new int[Program.sudokuSize, Program.sudokuSize];
 
             for (var i = 0; i < Program.sudokuSize; i++)
             {
@@ -344,9 +332,10 @@ namespace CI_practical1
                 for (var j = 0; j < Program.sudokuSize; j++)
                 {
                     sudoku[j, i] = line[j];
-                    EmptySudoku[j, i] = line[j];
+                    emptySudoku[j, i] = line[j];
                 }
             }
+
             foreach (var (block, (x, y)) in sudoku.GetAllBlocks())
             {
                 var domain = Enumerable.Range(1, Program.sudokuSize).ToList();
@@ -378,24 +367,26 @@ namespace CI_practical1
                 sudoku.SetBlock(block, (x, y));
             }
 
-            //Improve later
-            Evaluation = new(int row, int col)[Program.sudokuSize, Program.sudokuSize];
+            // Improve later.
+            evaluation = new(int row, int col)[Program.sudokuSize, Program.sudokuSize];
 
             for (var x = 0; x < Program.sudokuSize; x++)
             {
                 for (var y = 0; y < Program.sudokuSize; y++)
                 {
-                    Evaluation[x, y] = GetCellValue(sudoku, x, y);
+                    evaluation[x, y] = GetCellValue(sudoku, x, y);
                 }
             }
+
+            // Note to self: update VS on laptop.
+            var s = sudokuPath?.Length;
 
             return sudoku;
         }
 
         private void updateRunTimeData()
         {
-            var time = stopwatch.ElapsedMilliseconds;
-            if (time > 600000)
+            if ((DateTime.UtcNow - starttime).TotalMilliseconds > 600000)
             {
                 timeOut = true;
             }
@@ -416,9 +407,9 @@ namespace CI_practical1
 
             // Ugly linq query but no idea how to format this as expression. 
             var pairs = from x in domain
-                from y in domain
-                where x < y
-                select (x, y);
+                        from y in domain
+                        where x < y
+                        select (x, y);
             return pairs.ToList();
         }
 

@@ -15,11 +15,9 @@ namespace CI_practical1
 
         public static void Main(string[] args)
         {
-            new Worker(0, new Random(4), 3, 7).DoWork();
-            Console.ReadLine();
-
-            var slist = new int[] {1, 2, 3, 4, 5};
-            var nlist = new int[] {1, 2, 3, 4, 5,6, 7};
+            // Most common good values.
+            var slist = new [] {1, 2, 3}; //, 4, 5, 6, 7, 8, 9, 10};
+            var nlist = new [] {1, 3, 5, 7}; //, 5, 6, 7, 8, 9, 10};
 
             var tasks = new List<Task>();
             var i = 0;
