@@ -16,20 +16,22 @@ namespace CI_practical1
         public static void Main(string[] args)
         {
             var slist = new int[] {1, 2, 3, 5};
-            var nlist = new int[] {1, 2, 3, 5};
+            var nlist = new int[] {1, 3, 5, 7};
 
-            var tasks = new List<Task>();
-            var i = 0;
+            new Worker(0, new Random(4), 2, 3).DoWork();
 
-            foreach (var s in slist)
-            {
-                foreach (var n in nlist)
-                {
-                    tasks.Add(Task.Run(() => new Worker(i++, new Random(4), s, n).DoWork()));
-                }
-            }
+            //var tasks = new List<Task>();
+            //var i = 0;
 
-            Task.WaitAll(tasks.ToArray());
+            //foreach (var s in slist)
+            //{
+            //    foreach (var n in nlist)
+            //    {
+            //        tasks.Add(Task.Run(() => new Worker(i++, new Random(4), s, n).DoWork()));
+            //    }
+            //}
+
+            //Task.WaitAll(tasks.ToArray());
 
             Console.ReadLine();
         }

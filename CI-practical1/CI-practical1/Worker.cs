@@ -20,9 +20,10 @@ namespace CI_practical1
         private string sudokuPath = "sudoku.txt";
 
         private int[] Domain;
-        public List<(int x, int y)> Pairs;
-        public Random Random;
-        public int[,] EmptySudoku;
+        private List<(int, int)> Pairs;
+        private Random Random;
+        private int[,] EmptySudoku;
+        private int[,] Evalution;
 
         public Worker(int id, Random random, int s, int n)
         {
@@ -100,6 +101,7 @@ namespace CI_practical1
                 while (blacklist.Contains(blocknum)) blocknum = Random.Next(0, Program.sudokuSize);
                 result = SearchOp(sudoku, blocknum);
                 if (result < 0) blacklist.Add(blocknum);
+                if (result > 0) blacklist.Clear();
 
                 statevalue -= result;
             }
@@ -125,17 +127,21 @@ namespace CI_practical1
 
                 sudoku.SetBlock(flat.Enflate(Program.blockSize), blockX, blockY);
 
+                //ReEvaluateCells(sudoku, (i1, i2), blockX, blockY);
+
                 return int.MinValue; // Evalute at all? 
             }
 
-            var possibleSwaps = Pairs.Select(xy => (xy, EvaluateSwap(sudoku, xy, blockX, blockY))).ToArray();
+            var possibleSwaps = Pairs.Select(tuple => (tuple, EvaluateCells(sudoku, tuple, blockX, blockY))).ToArray();
             var bestSwap = possibleSwaps.OrderByDescending(tuple => tuple.Item2).First();
 
             if (bestSwap.Item2 >= 0)
             {
-                Swap(ref flat[bestSwap.Item1.x], ref flat[bestSwap.Item1.y]);
+                // Messy tuple stuff. TODO fix?
+                Swap(ref flat[bestSwap.Item1.Item1], ref flat[bestSwap.Item1.Item2]);
                 var newblock = flat.Enflate(Program.blockSize);
                 sudoku.SetBlock(newblock, blockX, blockY);
+                //ReEvaluateCells(sudoku, bestSwap.Item1, blockX, blockY);
                 //Log($"Swapped {bestSwap.Item1.x}|{flat[bestSwap.Item1.x]} and {bestSwap.Item1.y}|{flat[bestSwap.Item1.y]} in block {blockNumber} for +{bestSwap.Item2}.");
             }
             //Log("No swap today.");
@@ -186,6 +192,138 @@ namespace CI_practical1
             }
 
             return value;
+        }
+
+        public void ReEvaluateCells(int[,] sudoku, (int i1, int i2) t, int blockX, int blockY)
+        {
+            (int x1, int y1) = (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y + blockY * Program.blockSize);
+
+            (int x2, int y2) = (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y + blockY * Program.blockSize);
+
+            for (var i = 0; i < Program.sudokuSize; i++)
+            {
+                if (x1 != x2)
+                {
+                    Evalution[x1, i] = GetCellValue(sudoku, x1, i, false, ((0, 0), 0), ((0, 0), 0));
+                    Evalution[x2, i] = GetCellValue(sudoku, x2, i, false, ((0, 0), 0), ((0, 0), 0));
+                }
+                if (y1 != y2)
+                {
+                    Evalution[i, y1] = GetCellValue(sudoku, i, y1, false, ((0, 0), 0), ((0, 0), 0));
+                    Evalution[i, y2] = GetCellValue(sudoku, i, y2, false, ((0, 0), 0), ((0, 0), 0));
+                }
+            }
+        }
+
+        public int EvaluateCells(int[,] sudoku, (int i1, int i2) t, int blockX, int blockY)
+        {
+            return EvaluateSwap(sudoku, t, blockX, blockY);
+
+            (int x1, int y1) = (t.i1.GetBlockCoords().x + blockX * Program.blockSize, t.i1.GetBlockCoords().y + blockY * Program.blockSize);
+            if (EmptySudoku[x1, y1] > 0) return int.MinValue;
+
+            (int x2, int y2) = (t.i2.GetBlockCoords().x + blockX * Program.blockSize, t.i2.GetBlockCoords().y + blockY * Program.blockSize);
+            if (EmptySudoku[x2, y2] > 0) return int.MinValue;
+
+            var newcell1 = ((x1, y1), sudoku[x2, y2]);
+            var newcell2 = ((x2, y2), sudoku[x1, y1]);
+
+            var baseValue = 0;
+
+            for (int i = 0; i < Program.sudokuSize; i++)
+            {
+                if (x1 != x2)
+                {
+                    baseValue += Evalution[x1, i];
+                    baseValue += Evalution[x2, i];
+                }
+                if (y1 != y2)
+                {
+                    baseValue += Evalution[i, y1];
+                    baseValue += Evalution[i, y2];
+                }
+            }
+
+            var newValue = 0;
+
+            for (int i = 0; i < Program.sudokuSize; i++)
+            {
+                if (x1 != x2)
+                {
+                    newValue += GetCellValue(sudoku, x1, i, true, newcell1, newcell2);
+                    newValue += GetCellValue(sudoku, x1, i, true, newcell1, newcell2);
+                }
+                if (y1 != y2)
+                {
+                    newValue += GetCellValue(sudoku, x1, i, true, newcell1, newcell2);
+                    newValue += GetCellValue(sudoku, x1, i, true, newcell1, newcell2);
+                }
+            }
+
+            var valueChange = baseValue - newValue;
+
+            var old = EvaluateSwap(sudoku, t, blockX, blockY);
+
+            if (valueChange != old)
+            {
+                
+            }
+
+            return old;
+        }
+
+        public int GetCellValue(int[,] sudoku, int x, int y, bool change, ((int x, int y) c, int val) i1, ((int x, int y) c, int val) i2)
+        {
+            var rowval = GetRowValue(sudoku, y, change, i1, i2);
+            var colval = GetColumnValue(sudoku, x, change, i1, i2);
+
+            var totalval = rowval + colval;
+
+            return totalval;
+        }
+
+        public int GetRowValue(int[,] sudoku, int y, bool change, ((int x, int y) c, int val) i1, ((int x, int y) c, int val) i2)
+        {
+            var missingAmount = Program.sudokuSize;
+            var seen = new List<int>();
+
+            for (var x = 0; x < Program.sudokuSize; x++)
+            {
+                var val = 0;
+                if (change && x == i1.c.x && y == i1.c.y) val = i1.val;
+                else if (change && x == i2.c.x && y == i2.c.y) val = i2.val;
+                else val = sudoku[x, y];
+
+                if (!seen.Contains(val))
+                {
+                    seen.Add(val);
+                    missingAmount--;
+                }
+            }
+
+            return missingAmount;
+        }
+
+        public int GetColumnValue(int[,] sudoku, int x, bool change, ((int x, int y) c, int val) i1, ((int x, int y) c, int val) i2)
+        {
+            var missingAmount = Program.sudokuSize;
+            var seen = new List<int>();
+
+            for (var y = 0; y < Program.sudokuSize; y++)
+            {
+                var val = 0;
+                if (change && x == i1.c.x && y == i1.c.y) val = i1.val;
+                else if (change && x == i2.c.x && y == i2.c.y) val = i2.val;
+                else val = sudoku[x, y];
+
+                if (!seen.Contains(val))
+                {
+                    seen.Add(val);
+                    missingAmount--;
+                }
+            }
+
+            return missingAmount;
         }
 
         public void PrintSudoku(int[,] sudoku)
@@ -262,6 +400,16 @@ namespace CI_practical1
                 }
 
                 sudoku.SetBlock(block, (x, y));
+            }
+
+            Evalution = new int[Program.sudokuSize, Program.sudokuSize];
+
+            for (var x = 0; x < Program.sudokuSize; x++)
+            {
+                for (var y = 0; y < Program.sudokuSize; y++)
+                {
+                    Evalution[x, y] = GetCellValue(sudoku, x, y, false, ((0, 0), 0), ((0, 0), 0));
+                }
             }
 
             return sudoku;
